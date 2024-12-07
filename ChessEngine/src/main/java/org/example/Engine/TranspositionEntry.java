@@ -11,6 +11,7 @@ public class TranspositionEntry {
     -1: Fail Low (All-Node)
     0: PV-Node
     1: Fail-high (Cut-node)
+    2: qSearch (Ignore for all purposes but move ordering)
      */
     public int nodeType;
 

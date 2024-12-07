@@ -249,7 +249,6 @@ public class Evaluation {
 
             if (p==Piece.BLACK_QUEEN) {
                 blackMat += 9;
-                continue;
             }
 
         }
@@ -287,7 +286,7 @@ public class Evaluation {
             }
 
             if (p==Piece.WHITE_QUEEN) {
-                score += (int) ((blackMgPercentage * mgQueen + queenTable[i]) + (blackEgPercentage * mgQueen + queenTable[i]));
+                score += (int) ((blackMgPercentage * mgQueen + queenTable[i]) + (blackEgPercentage * egQueen + queenTable[i]));
                 continue;
             }
 
@@ -317,7 +316,7 @@ public class Evaluation {
             }
 
             if (p==Piece.BLACK_QUEEN) {
-                score -= (int) ((whiteMgPercentage * mgQueen + queenTable[i]) + (whiteEgPercentage * mgQueen + queenTable[i]));
+                score -= (int) ((whiteMgPercentage * mgQueen + queenTable[i]) + (whiteEgPercentage * egQueen + queenTable[i]));
                 continue;
             }
 

@@ -14,24 +14,26 @@ public class Search {
     Board board = new Board();
     TranspositionTable TT = new TranspositionTable();
 
-    Map<Piece,Integer> orderValueScore = new HashMap<Piece,Integer>();
+    Book openingBook = new Book();
+
+    List<Integer> orderValueScore = new ArrayList<>();
 
     int nodes = 0;
 
     public Search() {
-        orderValueScore.put(Piece.WHITE_PAWN, 71);
-        orderValueScore.put(Piece.WHITE_KNIGHT, 293);
-        orderValueScore.put(Piece.WHITE_BISHOP, 300);
-        orderValueScore.put(Piece.WHITE_ROOK, 456);
-        orderValueScore.put(Piece.WHITE_QUEEN, 905);
-        orderValueScore.put(Piece.WHITE_KING, 0);
+        orderValueScore.add(71);
+        orderValueScore.add(279);
+        orderValueScore.add(280);
+        orderValueScore.add(456);
+        orderValueScore.add(905);
+        orderValueScore.add(0);
 
-        orderValueScore.put(Piece.BLACK_PAWN, 71);
-        orderValueScore.put(Piece.BLACK_KNIGHT, 293);
-        orderValueScore.put(Piece.BLACK_BISHOP, 300);
-        orderValueScore.put(Piece.BLACK_ROOK, 456);
-        orderValueScore.put(Piece.BLACK_QUEEN, 905);
-        orderValueScore.put(Piece.BLACK_KING, 0);
+        orderValueScore.add(71);
+        orderValueScore.add(279);
+        orderValueScore.add(280);
+        orderValueScore.add(456);
+        orderValueScore.add(905);
+        orderValueScore.add(0);
 
     }
 
@@ -73,7 +75,7 @@ public class Search {
         if (winLossDraw < 1)
             return winLossDraw;
 
-        if (depth <= 3) {
+        if (depth <= 2) {
             return negamax(alpha, beta, depth, plyDeep);
         }
 
@@ -102,8 +104,8 @@ public class Search {
             //do not reduce captures
             int LMR = 0;
             if (!inCheck && !board.isKingAttacked() && !capture && i > 2) {
-                if (!capture)
-                    LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
+                LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
+
             }
 
             //Search with the full window until alpha improves
@@ -179,7 +181,7 @@ public class Search {
         if (winLossDraw < 1)
             return winLossDraw;
 
-        if (depth == 0) {
+        if (depth <= 0) {
             return qSearch(alpha, beta, 20);
         }
 
@@ -187,12 +189,11 @@ public class Search {
         //if our position is really poor, we do not need to investigate at low depth nodes
         //We do not razor if we are in check.
         if (!board.isKingAttacked()) {
+            if (depth == 1) {
+                int staticEval = evaluation.evaluate(board);
 
-            int staticEval = evaluation.evaluate(board);
-
-            int value = staticEval + 125;
-            if (value < beta) {
-                if (depth == 1) {
+                int value = staticEval + 125;
+                if (value < beta) {
                     return Math.max(qSearch(alpha, beta, 20), value);
                 }
             }
@@ -204,12 +205,23 @@ public class Search {
         Move bestMove = new Move(Square.A1,Square.A1);
         int alphaOrig = alpha;
 
+        int i = 0;
+        boolean inCheck = board.isKingAttacked();
         for (ScoredMove scoredMove : orderedMoves) {
             Move move = scoredMove.move;
 
+            boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+
             board.doMove(move);
 
-            int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+            int score = -9999999;
+
+            //Late move reductions
+            //Do not reduce when in check
+            //do not reduce moves that are checks
+            //do not reduce captures
+
+            score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
             board.undoMove();
 
@@ -222,6 +234,7 @@ public class Search {
             if (score >= beta)
                 break;
 
+            i++;
         }
 
         insertTable(alpha, beta, alphaOrig, depth, bestMove);
@@ -263,16 +276,19 @@ public class Search {
         if (staticEval >= beta)
             return beta;
 
-        if (alpha - 975 > staticEval)
+        if (alpha - 1125 > staticEval)
             return alpha;
 
         if (alpha < staticEval)
             alpha = staticEval;
 
-        List<ScoredMove> orderedMoves = orderCapturesAndChecks(depth);
+        List<ScoredMove> orderedMoves = orderCapturesAndChecks();
 
         for (ScoredMove scoredMove : orderedMoves) {
             Move m = scoredMove.move;
+
+            if (board.getPiece(m.getTo()).ordinal() < 11 && orderValueScore.get(board.getPiece(m.getTo()).ordinal()) + staticEval + 200 < alpha )
+                continue;
 
             board.doMove(m);
             int score = -qSearch(-beta, -alpha, depth - 1);
@@ -319,7 +335,7 @@ public class Search {
             if (node.depth <= 0 && board.getPiece(move.getTo()) != Piece.NONE) {
 
                 //Better value capture
-                if (orderValueScore.get(board.getPiece(move.getTo())) > orderValueScore.get(board.getPiece(move.getFrom()))) {
+                if (orderValueScore.get(board.getPiece(move.getTo()).ordinal()) > orderValueScore.get(board.getPiece(move.getFrom()).ordinal())) {
                     score += 600;
                 }
 
@@ -331,12 +347,13 @@ public class Search {
         }
 
         Collections.sort(moves);
+        Collections.reverse(moves);
 
-        return moves.reversed();
+        return moves;
 
     }
 
-    public List<ScoredMove> orderCapturesAndChecks(int depth) {
+    public List<ScoredMove> orderCapturesAndChecks() {
 
         //Get Legal Moves
         List<Move> legalMoves = board.legalMoves();
@@ -358,7 +375,6 @@ public class Search {
                 aggressiveOrInCheck = true;
 
             if (aggressiveOrInCheck) {
-
                 int score = -99999;
 
                 //See if move is in TT
@@ -381,7 +397,7 @@ public class Search {
                 if (node.depth <= 0 && board.getPiece(move.getTo()) != Piece.NONE) {
 
                     //Better value capture
-                    if (orderValueScore.get(board.getPiece(move.getTo())) > orderValueScore.get(board.getPiece(move.getFrom()))) {
+                    if (orderValueScore.get(board.getPiece(move.getTo()).ordinal()) > orderValueScore.get(board.getPiece(move.getFrom()).ordinal())) {
                         score += 600;
                     }
 
@@ -396,8 +412,9 @@ public class Search {
         }
 
         Collections.sort(moves);
+        Collections.reverse(moves);
 
-        return moves.reversed();
+        return moves;
 
     }
 
@@ -460,64 +477,86 @@ public class Search {
     long startTime;
     int time = 0;
     public Move findMove(Board b, int maxDepth, int time) {
-
         this.board = b;
 
+        //Check the opening book
+        Move openingMove = openingBook.getOpening(b);
+        if (openingMove != null) {
+            System.out.println("Book move: " + openingMove);
+            return openingMove;
+        }
+
         startTime = System.nanoTime();
-        this.time = time;
-        nodes = 0;
-        TT.clear();
+        configureStats(time);
 
+        //Iterative deepening
         Move bestMove = new Move(Square.A1,Square.A1);
-
         for (int depth = 3; depth <= maxDepth; depth++) {
 
             int score = PVS(-9999999, 9999999, depth, 0);
+            int mateIn = mateDisplayScore(score);
 
-            int mateIn = 0;
-            if (Math.abs(score) > 98999) {
-                mateIn = (int)(1000000 - Math.abs(score)) / 2;
-            }
-
-            if (board.getSideToMove() == Side.BLACK) {
-                score *= -1;
-            }
-
-            long endTime = System.nanoTime();
-            long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-            if (duration/ 1000000 > time)
+            if (displayStats(score,mateIn,depth) == -1)
                 break;
-
-            System.out.println("depth: " + depth + ": " + duration / 1000000 + "ms");
-
-            StringBuilder s = new StringBuilder();
-            for (Move m : getPV()) {
-                s.append(m.toString() + " ");
-            }
-
-            String sign = "+";
-
-            if (score < 0)
-                sign = "";
-            if (score < -98999)
-                sign = "-";
-
-            if (mateIn == 0)
-                System.out.println(sign + ((float)score / 100) + ": " + s);
-            else {
-                System.out.println(sign + "M" + mateIn + ": " + s);
-            }
-
-            if (duration > 1000000 && nodes > 0)
-                System.out.println("Nodes searched: " +  getNodes() + "(" + (long)getNodes() / (duration / 1000000)  + "knps)");
-
 
             bestMove = getPV().get(0);
         }
 
         return bestMove;
 
+    }
+
+    void configureStats(int time) {
+        this.time = time;
+        nodes = 0;
+        TT.clear();
+    }
+
+    int mateDisplayScore(int score) {
+
+        if (Math.abs(score) > 98999) {
+            return (int)(1000000 - Math.abs(score)) / 2;
+        }
+
+        return 0;
+
+    }
+
+    int displayStats(int score, int mateIn, int depth) {
+        if (board.getSideToMove() == Side.BLACK) {
+            score *= -1;
+        }
+
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime);
+
+        if (duration/ 1000000 > time)
+            return -1;
+
+        System.out.println("depth: " + depth + ": " + duration / 1000000 + "ms");
+
+        StringBuilder s = new StringBuilder();
+        for (Move m : getPV()) {
+            s.append(m.toString() + " ");
+        }
+
+        String sign = "+";
+
+        if (score < 0)
+            sign = "";
+        if (score < -98999)
+            sign = "-";
+
+        if (mateIn == 0)
+            System.out.println(sign + ((float)score / 100) + ": " + s);
+        else {
+            System.out.println(sign + "M" + mateIn + ": " + s);
+        }
+
+        if (duration > 1000000 && nodes > 0)
+            System.out.println("Nodes searched: " +  getNodes() + "(" + (long)getNodes() / (duration / 1000000)  + "knps)");
+
+        return 0;
     }
 
 }
