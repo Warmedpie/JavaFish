@@ -15,6 +15,7 @@ public class Search {
     TranspositionTable TT = new TranspositionTable();
 
     Book openingBook = new Book();
+    MoveTable MT = new MoveTable();
 
     List<Integer> orderValueScore = new ArrayList<>();
 
@@ -106,6 +107,9 @@ public class Search {
             if (!inCheck && !board.isKingAttacked() && !capture && i > 2) {
                 LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
 
+                if (i > 5) {
+                    LMR += i / 5;
+                }
             }
 
             //Search with the full window until alpha improves
@@ -129,6 +133,9 @@ public class Search {
                 alpha = score;
                 bestMove = move;
             }
+
+            if (plyDeep <= 3)
+                MT.insert(move.hashCode(), new MoveTableEntry(score, 1));
 
             //Fail-hard beta cut-off
             if (score >= beta)
@@ -215,11 +222,6 @@ public class Search {
             board.doMove(move);
 
             int score = -9999999;
-
-            //Late move reductions
-            //Do not reduce when in check
-            //do not reduce moves that are checks
-            //do not reduce captures
 
             score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
@@ -324,6 +326,9 @@ public class Search {
                 if (node.nodeType == 0)
                     score += 10000;
 
+            }
+            else if (depth > 7) {
+                score = -qSearch(-99999, 99999, depth - 7) - 300;
             }
             //if not in TT, score based on static eval (Tapered)
             else {
@@ -476,12 +481,12 @@ public class Search {
 
     long startTime;
     int time = 0;
-    public Move findMove(Board b, int maxDepth, int time) {
+    public Move findMove(Board b, int maxDepth, int time, boolean useBook) {
         this.board = b;
 
         //Check the opening book
         Move openingMove = openingBook.getOpening(b);
-        if (openingMove != null) {
+        if (useBook && openingMove != null) {
             System.out.println("Book move: " + openingMove);
             return openingMove;
         }
@@ -499,6 +504,9 @@ public class Search {
             if (displayStats(score,mateIn,depth) == -1)
                 break;
 
+            if (mateIn > 0)
+                break;
+
             bestMove = getPV().get(0);
         }
 
@@ -509,6 +517,7 @@ public class Search {
     void configureStats(int time) {
         this.time = time;
         nodes = 0;
+        MT.clear();
         TT.clear();
     }
 

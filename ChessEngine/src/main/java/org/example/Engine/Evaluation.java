@@ -13,11 +13,11 @@ public class Evaluation {
     int mgRook = 477;
     int mgQueen = 1025;
 
-    int egPawn = 94;
-    int egKnight = 281;
-    int egBishop = 297;
-    int egRook = 512;
-    int egQueen = 936;
+    int egPawn = 101;
+    int egKnight = 300;
+    int egBishop = 319;
+    int egRook = 550;
+    int egQueen = 1005;
 
     int[] mgPawnTableWhite;
     int[] mgPawnTableBlack;

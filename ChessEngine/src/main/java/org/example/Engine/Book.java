@@ -66,8 +66,11 @@ public class Book {
         for (Move m : b.legalMoves()) {
             b.doMove(m);
 
-            if (truncate(b.getFen(), " ").equals(fen))
+            if (truncate(b.getFen(), " ").equals(fen)) {
+                b.undoMove();
                 return m;
+
+            }
 
             b.undoMove();
         }

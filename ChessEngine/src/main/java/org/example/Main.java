@@ -14,7 +14,6 @@ public class Main {
     public static void main(String[] args) {
 
         Board b = new Board();
-        b.loadFromFen("5rk1/p3p2p/6p1/n7/8/8/P3q2P/R6K w - - 0 37");
         Search search = new Search();
 
         Scanner scanner = new Scanner(System.in);
@@ -22,6 +21,7 @@ public class Main {
         int depthToSearch = 0;
         int timeToSearch = 0;
         boolean playResult = false;
+        boolean useBook = true;
 
         while(true) {
 
@@ -54,7 +54,7 @@ public class Main {
                 if (arguments[0].toLowerCase().equals("engine")) {
 
                     if (arguments.length == 1) {
-                        Move m = search.findMove(b, depthToSearch, timeToSearch);
+                        Move m = search.findMove(b, depthToSearch, timeToSearch, useBook);
 
                         if (playResult) {
                             b.doMove(m);
@@ -66,15 +66,34 @@ public class Main {
                         int depth = Integer.parseInt(arguments[1]);
                         int time = Integer.parseInt(arguments[2]);
 
+                        if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-nb")) {
+                            useBook = false;
+                        }
+                        if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-nb")) {
+                            useBook = false;
+                        }
+                        if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-nb")) {
+                            useBook = false;
+                        }
+
                         depthToSearch = depth;
                         timeToSearch = time;
 
-                        Move m = search.findMove(b, depth, time);
+                        Move m = search.findMove(b, depth, time, useBook);
 
-                        if (arguments.length == 4 && arguments[3].toLowerCase().equals("-p")) {
+                        if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-p")) {
                             playResult = true;
                             b.doMove(m);
                         }
+                        if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-p")) {
+                            playResult = true;
+                            b.doMove(m);
+                        }
+                        if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-p")) {
+                            playResult = true;
+                            b.doMove(m);
+                        }
+
                     }
 
                 }
@@ -92,7 +111,7 @@ public class Main {
         System.out.println("PLAY {MOVE}: plays a from a square to a given square");
         System.out.println("UNDO: undos last move");
         System.out.println("SETUP {fen}: Loads a fen into the engine");
-        System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-p}: Generates an engine move, stopping after a certain depth or time");
+        System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-flag}: Generates an engine move, stopping after a certain depth or time (-p: play move, -nb no book)");
     }
 
     public static void playMove(Board b, String move) {
