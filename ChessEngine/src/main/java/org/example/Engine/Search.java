@@ -15,7 +15,6 @@ public class Search {
     TranspositionTable TT = new TranspositionTable();
 
     Book openingBook = new Book();
-    MoveTable MT = new MoveTable();
 
     List<Integer> orderValueScore = new ArrayList<>();
 
@@ -82,7 +81,7 @@ public class Search {
 
 
         //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth);
+        List<ScoredMove> orderedMoves = orderMoves(depth, alpha, beta);
 
         int alphaOrig = alpha;
 
@@ -110,6 +109,7 @@ public class Search {
                 if (i > 5) {
                     LMR += i / 5;
                 }
+
             }
 
             //Search with the full window until alpha improves
@@ -134,9 +134,6 @@ public class Search {
                 bestMove = move;
             }
 
-            if (plyDeep <= 3)
-                MT.insert(move.hashCode(), new MoveTableEntry(score, 1));
-
             //Fail-hard beta cut-off
             if (score >= beta)
                 break;
@@ -146,7 +143,7 @@ public class Search {
 
         insertTable(alpha, beta, alphaOrig, depth, bestMove);
 
-        return alpha;
+        return Math.min(alpha,beta);
 
     }
 
@@ -207,7 +204,7 @@ public class Search {
         }
 
         //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth);
+        List<ScoredMove> orderedMoves = orderMoves(depth, alpha, beta);
 
         Move bestMove = new Move(Square.A1,Square.A1);
         int alphaOrig = alpha;
@@ -241,7 +238,7 @@ public class Search {
 
         insertTable(alpha, beta, alphaOrig, depth, bestMove);
 
-        return alpha;
+        return Math.min(alpha,beta);
     }
 
     void insertTable(int alpha, int beta, int alphaOrig, int depth, Move bestMove) {
@@ -296,16 +293,18 @@ public class Search {
             int score = -qSearch(-beta, -alpha, depth - 1);
             board.undoMove();
 
+            if( score > alpha ) {
+                alpha = score;
+            }
+
             if( score >= beta )
                 return beta;
-            if( score > alpha )
-                alpha = score;
         }
 
         return alpha;
     }
 
-    public List<ScoredMove> orderMoves(int depth) {
+    public List<ScoredMove> orderMoves(int depth, int alpha, int beta) {
 
         //Get Legal Moves
         List<Move> legalMoves = board.legalMoves();
@@ -328,7 +327,7 @@ public class Search {
 
             }
             else if (depth > 7) {
-                score = -qSearch(-99999, 99999, depth - 7) - 300;
+                score = -qSearch(-beta, -alpha, depth - 7) - 300;
             }
             //if not in TT, score based on static eval (Tapered)
             else {
@@ -360,6 +359,9 @@ public class Search {
 
     public List<ScoredMove> orderCapturesAndChecks() {
 
+        if (board.isKingAttacked())
+            return orderMoves(0,999999,-999999);
+
         //Get Legal Moves
         List<Move> legalMoves = board.legalMoves();
 
@@ -371,9 +373,6 @@ public class Search {
 
             boolean aggressiveOrInCheck = board.getPiece(move.getTo()) != Piece.NONE;
 
-            if (board.isKingAttacked())
-                aggressiveOrInCheck = true;
-
             board.doMove(move);
 
             if (board.isKingAttacked())
@@ -382,30 +381,18 @@ public class Search {
             if (aggressiveOrInCheck) {
                 int score = -99999;
 
-                //See if move is in TT
-                TranspositionEntry node = TT.get(board.getZobristKey());
+                score = -evaluation.evaluate(board);
 
-                if (node.depth > 0) {
-                    score = -node.score;
-
-                    //this was the PV node
-                    if (node.nodeType == 0)
-                        score += 10000;
-                }
-                //if not in TT, score based on static eval (Tapered)
-                else {
-                    score = -evaluation.evaluate(board) - 500;
-
-                }
                 board.undoMove();
 
-                if (node.depth <= 0 && board.getPiece(move.getTo()) != Piece.NONE) {
+                //Better value capture
+                if (board.getPiece(move.getTo()).ordinal() < 11 && board.getPiece(move.getFrom()).ordinal() < 11  && orderValueScore.get(board.getPiece(move.getTo()).ordinal()) > orderValueScore.get(board.getPiece(move.getFrom()).ordinal())) {
+                    score += 600;
+                }
 
-                    //Better value capture
-                    if (orderValueScore.get(board.getPiece(move.getTo()).ordinal()) > orderValueScore.get(board.getPiece(move.getFrom()).ordinal())) {
-                        score += 600;
-                    }
-
+                //Worse value capture
+                if (board.getPiece(move.getTo()).ordinal() < 11 && board.getPiece(move.getFrom()).ordinal() < 11  && orderValueScore.get(board.getPiece(move.getTo()).ordinal()) < orderValueScore.get(board.getPiece(move.getFrom()).ordinal())) {
+                    score -= 600;
                 }
 
                 ScoredMove m = new ScoredMove(move, score);
@@ -517,7 +504,6 @@ public class Search {
     void configureStats(int time) {
         this.time = time;
         nodes = 0;
-        MT.clear();
         TT.clear();
     }
 
