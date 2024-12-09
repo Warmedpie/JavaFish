@@ -359,9 +359,6 @@ public class Search {
 
     public List<ScoredMove> orderCapturesAndChecks() {
 
-        if (board.isKingAttacked())
-            return orderMoves(0,999999,-999999);
-
         //Get Legal Moves
         List<Move> legalMoves = board.legalMoves();
 
@@ -372,6 +369,9 @@ public class Search {
         for (Move move : legalMoves) {
 
             boolean aggressiveOrInCheck = board.getPiece(move.getTo()) != Piece.NONE;
+
+            if (board.isKingAttacked())
+                aggressiveOrInCheck = true;
 
             board.doMove(move);
 
