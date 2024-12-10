@@ -15,6 +15,7 @@ public class Main {
 
         Board b = new Board();
         Search search = new Search();
+        Evaluation e = new Evaluation();
 
         Scanner scanner = new Scanner(System.in);
 
@@ -31,7 +32,7 @@ public class Main {
 
             String command = scanner.nextLine();
 
-            if (command.toLowerCase().equals("help")) {
+            if (command.equalsIgnoreCase("help")) {
                 help();
             }
 
@@ -39,19 +40,19 @@ public class Main {
             String[] arguments = command.split("\\s+");
 
             try {
-                if (arguments[0].toLowerCase().equals("play")) {
+                if (arguments[0].equalsIgnoreCase("play")) {
                     playMove(b, arguments[1]);
                 }
 
-                if (arguments[0].toLowerCase().equals("undo")) {
+                if (arguments[0].equalsIgnoreCase("undo")) {
                     b.undoMove();
                 }
 
-                if (arguments[0].toLowerCase().equals("setup")) {
+                if (arguments[0].equalsIgnoreCase("setup")) {
                     b.loadFromFen(command.substring(6));
                 }
 
-                if (arguments[0].toLowerCase().equals("engine")) {
+                if (arguments[0].equalsIgnoreCase("engine")) {
 
                     if (arguments.length == 1) {
                         Move m = search.findMove(b, depthToSearch, timeToSearch, useBook);
@@ -97,6 +98,15 @@ public class Main {
                     }
 
                 }
+
+                if (arguments[0].equalsIgnoreCase("static")) {
+                    if (b.getSideToMove() == Side.WHITE)
+                        System.out.println("score: " + ((float)e.evaluate(b) / 100));
+                    else
+                        System.out.println("score: " + ((float)-e.evaluate(b) / 100));
+
+                }
+
             }
 
             catch(Exception ignore) {}
@@ -112,6 +122,7 @@ public class Main {
         System.out.println("UNDO: undos last move");
         System.out.println("SETUP {fen}: Loads a fen into the engine");
         System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-flag}: Generates an engine move, stopping after a certain depth or time (-p: play move, -nb no book)");
+        System.out.println("STATIC: Returns the static evaluation of the current position");
     }
 
     public static void playMove(Board b, String move) {
@@ -152,7 +163,7 @@ public class Main {
 
 
 
-        List<Piece> board = new ArrayList(List.of(b.boardToArray()));
+        List<Piece> board = new ArrayList<>(List.of(b.boardToArray()));
         board.remove(64);
 
         for (Piece p : board) {
@@ -185,67 +196,67 @@ public class Main {
             }
 
             if (p==Piece.WHITE_PAWN) {
-                display[y].append(WHITE_FG + " P ");
+                display[y].append(WHITE_FG).append(" P ");
                 continue;
             }
 
             if (p==Piece.WHITE_KNIGHT) {
-                display[y].append(WHITE_FG + " N ");
+                display[y].append(WHITE_FG).append(" N ");
                 continue;
             }
 
             if (p==Piece.WHITE_BISHOP) {
-                display[y].append(WHITE_FG + " B ");
+                display[y].append(WHITE_FG).append(" B ");
                 continue;
             }
 
             if (p==Piece.WHITE_ROOK) {
-                display[y].append(WHITE_FG + " R ");
+                display[y].append(WHITE_FG).append(" R ");
                 continue;
             }
 
             if (p==Piece.WHITE_QUEEN) {
-                display[y].append(WHITE_FG + " Q ");
+                display[y].append(WHITE_FG).append(" Q ");
                 continue;
             }
 
             if (p==Piece.WHITE_KING) {
-                display[y].append(WHITE_FG + " K ");
+                display[y].append(WHITE_FG).append(" K ");
                 continue;
             }
 
             if (p==Piece.BLACK_PAWN) {
-                display[y].append(BLACK_FG + " p ");
+                display[y].append(BLACK_FG).append(" p ");
                 continue;
             }
 
             if (p==Piece.BLACK_KNIGHT) {
-                display[y].append(BLACK_FG + " n ");
+                display[y].append(BLACK_FG).append(" n ");
                 continue;
             }
 
             if (p==Piece.BLACK_BISHOP) {
-                display[y].append(BLACK_FG + " b ");
+                display[y].append(BLACK_FG).append(" b ");
                 continue;
             }
 
             if (p==Piece.BLACK_ROOK) {
-                display[y].append(BLACK_FG + " r ");
+                display[y].append(BLACK_FG).append(" r ");
                 continue;
             }
 
             if (p==Piece.BLACK_QUEEN) {
-                display[y].append(BLACK_FG + " q ");
+                display[y].append(BLACK_FG).append(" q ");
                 continue;
             }
 
             if (p==Piece.BLACK_KING) {
-                display[y].append(BLACK_FG + " k ");
+                display[y].append(BLACK_FG).append(" k ");
                 continue;
             }
 
         }
-        display[7].append(WHITE_FG + BLACK_BG);
+        display[7].append(WHITE_FG).append(BLACK_BG);
 
         for (int i = 7; i >= 0; i--) {
             printer.append(display[i]);

@@ -16,6 +16,7 @@ public class Search {
 
     Book openingBook = new Book();
 
+
     List<Integer> orderValueScore = new ArrayList<>();
 
     int nodes = 0;
@@ -114,7 +115,7 @@ public class Search {
 
             //Search with the full window until alpha improves
             if (alpha == alphaOrig) {
-                score = -PVS(-beta,-alpha,depth-1 - LMR, plyDeep + 1);
+                score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
             }
             else {
 
