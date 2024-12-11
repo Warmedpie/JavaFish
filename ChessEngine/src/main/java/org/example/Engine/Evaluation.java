@@ -203,6 +203,57 @@ public class Evaluation {
 
     }
 
+    public int getMat(Board board) {
+        int mat = 0;
+
+        for (Piece p : board.boardToArray()) {
+            if (p == Piece.NONE)
+                continue;
+
+            if (p==Piece.WHITE_KNIGHT) {
+                mat += 3;
+                continue;
+            }
+
+            if (p==Piece.WHITE_BISHOP) {
+                mat += 3;
+                continue;
+            }
+
+            if (p==Piece.WHITE_ROOK) {
+                mat += 5;
+                continue;
+            }
+
+            if (p==Piece.WHITE_QUEEN) {
+                mat += 9;
+                continue;
+            }
+
+            if (p==Piece.BLACK_KNIGHT) {
+                mat += 3;
+                continue;
+            }
+
+            if (p==Piece.BLACK_BISHOP) {
+                mat += 3;
+                continue;
+            }
+
+            if (p==Piece.BLACK_ROOK) {
+                mat += 5;
+                continue;
+            }
+
+            if (p==Piece.BLACK_QUEEN) {
+                mat += 9;
+            }
+
+        }
+
+        return mat;
+    }
+
     public int evaluate(Board board) {
         int score = 0;
 
