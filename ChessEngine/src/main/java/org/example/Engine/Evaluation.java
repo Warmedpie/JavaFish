@@ -1,6 +1,7 @@
 package org.example.Engine;
 
 import com.github.bhlangonijr.chesslib.*;
+import com.github.bhlangonijr.chesslib.move.Move;
 
 public class Evaluation {
 
@@ -201,6 +202,54 @@ public class Evaluation {
 
         kingAttackers = new int[]{0,81,52,44,10,0,81,52,44,10,0};
 
+    }
+
+    public int PsqM(Board b, Move m) {
+        Piece p = b.getPiece(m.getFrom());
+        if (p==Piece.WHITE_PAWN) {
+            return mgPawnTableWhite[m.getTo().ordinal()] - mgPawnTableWhite[m.getFrom().ordinal()];
+        }
+        if (p==Piece.WHITE_KNIGHT) {
+            return knightTable[m.getTo().ordinal()] - knightTable[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.WHITE_BISHOP) {
+            return bishopTableWhite[m.getTo().ordinal()] - bishopTableBlack[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.WHITE_ROOK) {
+            return rookTableWhite[m.getTo().ordinal()] - rookTableWhite[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.WHITE_QUEEN) {
+            return queenTable[m.getTo().ordinal()] - queenTable[m.getFrom().ordinal()];
+        }
+        if (p==Piece.WHITE_KING) {
+            return mgKingTableWhite[m.getTo().ordinal()] - mgKingTableWhite[m.getFrom().ordinal()];
+        }
+        if(p==Piece.BLACK_PAWN) {
+            return mgPawnTableBlack[m.getTo().ordinal()] - mgPawnTableBlack[m.getFrom().ordinal()];
+        }
+        if (p==Piece.BLACK_KNIGHT) {
+            return knightTable[m.getTo().ordinal()] - knightTable[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.BLACK_BISHOP) {
+            return bishopTableBlack[m.getTo().ordinal()] - bishopTableBlack[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.BLACK_ROOK) {
+            return rookTableBlack[m.getTo().ordinal()] - rookTableBlack[m.getFrom().ordinal()];
+        }
+
+        if (p==Piece.BLACK_QUEEN) {
+            return queenTable[m.getTo().ordinal()] - queenTable[m.getFrom().ordinal()];
+        }
+        if (p==Piece.BLACK_KING) {
+            return mgKingTableBlack[m.getTo().ordinal()] - mgKingTableBlack[m.getFrom().ordinal()];
+        }
+
+        return 0;
     }
 
     public int evaluate(Board board) {
