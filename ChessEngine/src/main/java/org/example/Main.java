@@ -166,7 +166,7 @@ public class Main {
         int x = 0;
         int y = 0;
 
-        int color = 1;
+        int color = -1;
 
 
 
@@ -264,10 +264,10 @@ public class Main {
 
         }
         display[7].append(WHITE_FG).append(BLACK_BG);
-
         for (int i = 7; i >= 0; i--) {
             printer.append(display[i]);
         }
+        printer.append(WHITE_FG).append(BLACK_BG);
 
         System.out.println(printer);
 

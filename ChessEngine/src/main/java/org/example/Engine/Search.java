@@ -322,6 +322,9 @@ public class Search {
 
         List<ScoredMove> orderedMoves = orderCapturesAndChecks();
 
+        if (orderedMoves.isEmpty())
+            return staticEval;
+
         for (ScoredMove scoredMove : orderedMoves) {
             Move m = scoredMove.move;
 
@@ -439,8 +442,10 @@ public class Search {
 
         }
 
-        Collections.sort(moves);
-        Collections.reverse(moves);
+        if (moves.size() > 1) {
+            Collections.sort(moves);
+            Collections.reverse(moves);
+        }
 
         return moves;
 
@@ -507,8 +512,10 @@ public class Search {
             }
         }
 
-        Collections.sort(moves);
-        Collections.reverse(moves);
+        if (moves.size() > 1) {
+            Collections.sort(moves);
+            Collections.reverse(moves);
+        }
 
         return moves;
 
