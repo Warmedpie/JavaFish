@@ -18,9 +18,16 @@ public class Search {
 
 
     List<Integer> orderValueScore = new ArrayList<>();
+
+    //Every time a beta cut occurs, raise this number
     int[][] HistoryHeuristic = new int[64][64];
 
+    //Every time alpha is raised, raise this number
+    int[][] MiniHistory = new int[64][64];
+
     int nodes = 0;
+    int firstMoveBetaCuts = 0;
+    int firstMoves = 0;
 
     public Search() {
         orderValueScore.add(71);
@@ -41,6 +48,7 @@ public class Search {
         for (int p = 0; p < 64; p++) {
             for (int s = 0; s < 64; s++) {
                 HistoryHeuristic[p][s] = 0;
+                MiniHistory[p][s] = 0;
             }
         }
 
@@ -111,11 +119,11 @@ public class Search {
             //do not reduce moves that are checks
             //do not reduce captures
             int LMR = 0;
-            if (!inCheck && !board.isKingAttacked() && !capture && i > 2) {
+            if (!inCheck && !board.isKingAttacked() && i > 1) {
                 LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
 
-                if (i > 5) {
-                    LMR += i / 5;
+                if (i > 4) {
+                    LMR += i / 4;
                 }
 
             }
@@ -140,13 +148,19 @@ public class Search {
             if (score > alpha) {
                 alpha = score;
                 bestMove = move;
+
+                MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth;
+
             }
 
             //Fail-hard beta cut-off
+            if (i==0)
+                firstMoves++;
             if (score >= beta) {
 
-               HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth*depth;
-
+                HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth*depth;
+                if (i == 0)
+                    firstMoveBetaCuts ++;
                 break;
 
             }
@@ -199,7 +213,7 @@ public class Search {
             return winLossDraw;
 
         if (depth <= 0) {
-            return qSearch(alpha, beta, 20);
+            return qSearch(alpha, beta, 7);
         }
 
         //Razoring
@@ -211,7 +225,7 @@ public class Search {
 
                 int value = staticEval + 125;
                 if (value < beta) {
-                    return Math.max(qSearch(alpha, beta, 20), value);
+                    return Math.max(qSearch(alpha, beta, 5), value);
                 }
             }
         }
@@ -227,9 +241,7 @@ public class Search {
 
             board.doMove(move);
 
-            int score = -9999999;
-
-            score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+            int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
             board.undoMove();
 
@@ -328,7 +340,7 @@ public class Search {
                 //See if move is in TT
                 TranspositionEntry node = TT.get(board.getZobristKey());
                 if (node.depth > 0) {
-                    score = -node.score + 2000;
+                    score = -node.score + 10000;
 
                     //this was the PV node
                     if (node.nodeType == 0)
@@ -336,7 +348,7 @@ public class Search {
 
                 }
                 else if (depth > 6) {
-                    score = -qSearch(alpha,beta,depth-4) - 900;
+                    score = -qSearch(-beta,-alpha,4) - 900;
                 }
                 //if not in TT, score based on static eval (Tapered)
                 else {
@@ -344,23 +356,35 @@ public class Search {
                 }
                 board.undoMove();
 
-                if (node.depth <= 0) {
-                    if (board.getPiece(move.getTo()) != Piece.NONE) {
-                        int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
-                        int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
-                        //Better value capture
-                        if (to > from) {
-                            score += 900;
-                        }
+                if (board.getPiece(move.getTo()) != Piece.NONE) {
+                    int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
+                    int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
 
-                        //Equal value capture
-                        if (to == from) {
-                            score += 300;
-                        }
+                    Side defender = Side.WHITE;
+
+                    if (board.getSideToMove() == Side.WHITE)
+                        defender = Side.BLACK;
+
+                    //Hanging piece
+                    if(board.squareAttackedBy(move.getTo(), defender) == 0)
+                        score += 4000 + to;
+                    //Better value capture
+                    else if (to > from) {
+                        score += 4000 + (to - from);
                     }
-                    else {
-                        score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
+
+                    //Equal value capture
+                    else if (to == from) {
+                        score += 1000 + from;
                     }
+
+                }
+                else {
+
+                    score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
+
+                    if (depth < 5)
+                        score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
                 }
             }
             else {
@@ -408,12 +432,28 @@ public class Search {
                 int to = board.getPiece(move.getTo()).ordinal();
                 int from = board.getPiece(move.getFrom()).ordinal();
 
+                Side defender = Side.WHITE;
+
+                if (board.getSideToMove() == Side.WHITE)
+                    defender = Side.BLACK;
+
                 //Better value capture
                 if (to < 11 && from < 11) {
-                    score = 1000 + to - from;
-                }
-                else {
-                    score = -evaluation.evaluate(board) - 900;
+                    //hanging piece
+                    if(board.squareAttackedBy(move.getTo(), defender) == 0)
+                        score = 1000 + orderValueScore.get(to);
+                    //Better value capture
+                    else if (orderValueScore.get(to) > orderValueScore.get(from)) {
+                        score = 900 + orderValueScore.get(to) - orderValueScore.get(from);
+                    }
+                    //Equal Captures
+                    else if (orderValueScore.get(to) == orderValueScore.get(from)) {
+                        score = 500;
+                    }
+                    //Bad captures
+                    else {
+                        score = orderValueScore.get(to) - orderValueScore.get(from);
+                    }
                 }
 
                 ScoredMove m = new ScoredMove(move, score);
@@ -495,8 +535,12 @@ public class Search {
         for (int p = 0; p < 64; p++) {
             for (int s = 0; s < 64; s++) {
                 HistoryHeuristic[p][s] = 0;
+                MiniHistory[p][s] = 0;
             }
         }
+
+        firstMoveBetaCuts = 0;
+        firstMoves = 0;
 
         //Check the opening book
         Move openingMove = openingBook.getOpening(b);
@@ -575,8 +619,10 @@ public class Search {
             System.out.println(sign + "M" + mateIn + ": " + s);
         }
 
-        if (duration > 1000000 && nodes > 0)
-            System.out.println("Nodes searched: " +  getNodes() + "(" + (long)getNodes() / (duration / 1000000)  + "knps)");
+        if (duration > 1000000 && nodes > 0) {
+            System.out.println("Nodes searched: " + getNodes() + "(" + (long) getNodes() / (duration / 1000000) + "knps)");
+            System.out.println("First Move beta cut %: " + ((float)firstMoveBetaCuts/(float)firstMoves));
+        }
 
         return 0;
     }

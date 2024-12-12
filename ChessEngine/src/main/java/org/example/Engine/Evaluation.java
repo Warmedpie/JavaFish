@@ -203,57 +203,6 @@ public class Evaluation {
 
     }
 
-    public int getMat(Board board) {
-        int mat = 0;
-
-        for (Piece p : board.boardToArray()) {
-            if (p == Piece.NONE)
-                continue;
-
-            if (p==Piece.WHITE_KNIGHT) {
-                mat += 3;
-                continue;
-            }
-
-            if (p==Piece.WHITE_BISHOP) {
-                mat += 3;
-                continue;
-            }
-
-            if (p==Piece.WHITE_ROOK) {
-                mat += 5;
-                continue;
-            }
-
-            if (p==Piece.WHITE_QUEEN) {
-                mat += 9;
-                continue;
-            }
-
-            if (p==Piece.BLACK_KNIGHT) {
-                mat += 3;
-                continue;
-            }
-
-            if (p==Piece.BLACK_BISHOP) {
-                mat += 3;
-                continue;
-            }
-
-            if (p==Piece.BLACK_ROOK) {
-                mat += 5;
-                continue;
-            }
-
-            if (p==Piece.BLACK_QUEEN) {
-                mat += 9;
-            }
-
-        }
-
-        return mat;
-    }
-
     public int evaluate(Board board) {
         int score = 0;
 
@@ -319,29 +268,29 @@ public class Evaluation {
             if (i < 64) {
                 if (isKingSquare(board, i) == 1) {
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
-                        score -= blackMgPercentage * 81;
+                        score -= (int) (blackMgPercentage * 81);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.BISHOP) != 0)
-                        score -= blackMgPercentage * 52;
+                        score -= (int) (blackMgPercentage * 52);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.QUEEN) != 0)
-                        score -= blackMgPercentage * 30;
+                        score -= (int) (blackMgPercentage * 30);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.ROOK) != 0)
-                        score -= blackMgPercentage * 44;
+                        score -= (int) (blackMgPercentage * 44);
 
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
-                        score +=  whiteMgPercentage * 45;
+                        score += (int) (whiteMgPercentage * 45);
                 }
                 if (isKingSquare(board, i) == -1) {
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
-                        score += whiteMgPercentage * 81;
+                        score += (int) (whiteMgPercentage * 81);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.BISHOP) != 0)
-                        score +=  whiteMgPercentage * 52;
+                        score += (int) (whiteMgPercentage * 52);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.QUEEN) != 0)
-                        score +=  whiteMgPercentage * 30;
+                        score += (int) (whiteMgPercentage * 30);
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.ROOK) != 0)
-                        score +=  whiteMgPercentage * 44;
+                        score += (int) (whiteMgPercentage * 44);
 
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
-                        score -= blackMgPercentage * 45;
+                        score -= (int) (blackMgPercentage * 45);
                 }
             }
 

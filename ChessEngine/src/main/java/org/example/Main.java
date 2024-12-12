@@ -65,8 +65,15 @@ public class Main {
 
                     else {
                         int depth = Integer.parseInt(arguments[1]);
-                        int time = Integer.parseInt(arguments[2]);
+                        int time = 0;
 
+
+                        if (!Objects.equals(arguments[2], "-ut")) {
+                            time = Integer.parseInt(arguments[2]);
+                        }
+                        else {
+                            time = 999999999;
+                        }
                         if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-nb")) {
                             useBook = false;
                         }
@@ -121,7 +128,7 @@ public class Main {
         System.out.println("PLAY {MOVE}: plays a from a square to a given square");
         System.out.println("UNDO: undos last move");
         System.out.println("SETUP {fen}: Loads a fen into the engine");
-        System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-flag}: Generates an engine move, stopping after a certain depth or time (-p: play move, -nb no book)");
+        System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-flag}: Generates an engine move, stopping after a certain depth or time (-p: play move, -nb no book, -ut for unlimited time (must replace TIME param))");
         System.out.println("STATIC: Returns the static evaluation of the current position");
     }
 
