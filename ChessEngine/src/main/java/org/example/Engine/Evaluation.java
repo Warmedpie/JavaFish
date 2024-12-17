@@ -39,8 +39,6 @@ public class Evaluation {
     int[] egKingTableWhite;
     int[] egKingTableBlack;
 
-    int[] kingAttackers;
-
     public Evaluation() {
         mgPawnTableBlack = new int[]
                 {       0,   0,   0,   0,   0,   0,  0,   0,
@@ -156,7 +154,7 @@ public class Evaluation {
 
         mgKingTableWhite = new int[]
                 {
-                        -15,  36,  12, -54,   -40, -28,  44,  14,
+                        -15,  4,  -9, -54,   -40, -28,  44,  14,
                         1,   7,  -8, -64, -43, -16,   9,   8,
                         -14, -14, -22, -46, -44, -30, -15, -27,
                         -49,  -1, -27, -39, -46, -44, -33, -51,
@@ -174,7 +172,7 @@ public class Evaluation {
                         -49,  -1, -27, -39, -46, -44, -33, -51,
                         -14, -14, -22, -46, -44, -30, -15, -27,
                         1,   7,  -8, -64, -43, -16,   9,   8,
-                        -15,  36,  12, -54, -40, -28,  44,  14,
+                        -15,  4,  -9, -54, -40, -28,  44,  14,
                 };
 
         egKingTableWhite = new int[]
@@ -200,12 +198,9 @@ public class Evaluation {
                         -53, -34, -21, -11, -28, -14, -24, -43
                 };
 
-        kingAttackers = new int[]{0,81,52,44,10,0,81,52,44,10,0};
-
     }
 
-    public int PsqM(Board b, Move m) {
-        Piece p = b.getPiece(m.getFrom());
+    public int PsqM(Piece p, Move m) {
         if (p==Piece.WHITE_PAWN) {
             return mgPawnTableWhite[m.getTo().ordinal()] - mgPawnTableWhite[m.getFrom().ordinal()];
         }
@@ -281,6 +276,7 @@ public class Evaluation {
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.ROOK) != 0)
                         atkDefScoreBlack += 44;
 
+                    //Knight defender
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
                         atkDefScoreWhite += 45;
                 }
@@ -294,6 +290,7 @@ public class Evaluation {
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.ROOK) != 0)
                         atkDefScoreWhite += 44;
 
+                    //Knight defender
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
                         atkDefScoreBlack += 45;
 
@@ -307,18 +304,12 @@ public class Evaluation {
                 if (board.getPiece(Square.squareAt(i - 16)) == Piece.WHITE_PAWN) {
                     score += 2;
                 }
-                if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.PAWN) != 0) {
-                    score += 1;
-                }
 
                 if (board.getPiece(Square.squareAt(i + 8)) == Piece.BLACK_PAWN) {
                     score -= 2;
                 }
                 if (board.getPiece(Square.squareAt(i + 16)) == Piece.BLACK_PAWN) {
                     score -= 2;
-                }
-                if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.PAWN) != 0) {
-                    score -= 1;
                 }
             }
             if (p == Piece.NONE)
@@ -329,7 +320,7 @@ public class Evaluation {
                 egScoreWhite += egPawn + egPawnTableWhite[i];
                 //Pawn shield
                 if (isKingSquare(board, i) == 1)
-                    score += 10;
+                    atkDefScoreWhite += 20;
 
                 continue;
             }
@@ -384,7 +375,7 @@ public class Evaluation {
 
                 //Pawn shield
                 if (isKingSquare(board, i) == -1)
-                    score -= 10;
+                    atkDefScoreBlack += 20;
 
                 continue;
             }
@@ -438,11 +429,9 @@ public class Evaluation {
 
         float whiteMgPercentage =  Math.max(0,((whiteMat - 10) / 21));
         float blackMgPercentage =  Math.max(0,((blackMat - 10) / 21));
-        float whiteEgPercentage =  1 - Math.max(0,((whiteMat - 10) / 21));
-        float blackEgPercentage =  1 - Math.max(0,((blackMat - 10) / 21));
 
-        score -= (int) ((whiteMgPercentage * mgScoreBlack) + (whiteEgPercentage * egScoreBlack));
-        score += (int) ((blackMgPercentage * mgScoreWhite) + (blackEgPercentage * egScoreWhite));
+        score -= (int) ((whiteMgPercentage * mgScoreBlack) + ((1 - whiteMgPercentage) * egScoreBlack));
+        score += (int) ((blackMgPercentage * mgScoreWhite) + ((1 - blackMgPercentage) * egScoreWhite));
 
         score += (int) (atkDefScoreWhite * blackMgPercentage);
         score -= (int) (atkDefScoreBlack * whiteMgPercentage);

@@ -348,7 +348,7 @@ public class Search {
                 }
                 //if not in TT, score based on static eval (Tapered)
                 else {
-                    score = evaluation.PsqM(board,move);
+                    score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
                 }
 
                 if (board.getPiece(move.getTo()) != Piece.NONE) {
@@ -362,16 +362,19 @@ public class Search {
 
                     //Hanging piece
                     if(board.squareAttackedBy(move.getTo(), defender) == 0)
-                        score += 4000 + to;
+                        score += 10000 + to;
                     //Better value capture
                     else if (to > from) {
-                        score += 4000 + (to - from);
+                        score += 10000 + (to - from);
                     }
 
                     //Equal value capture
                     else if (to == from) {
-                        score += 1000 + from;
+                        score += 5000 + from;
                     }
+
+                    else
+                        score += 2200;
 
                 }
                 else {
@@ -383,13 +386,15 @@ public class Search {
 
 
                     if (move.hashCode() == killerMove[depth])
-                        score += 1200;
+                        score += 3200;
 
-                    else if (move.hashCode() == killerMove[depth + 1])
-                        score += 1100;
+                    else if (move.hashCode() == killerMove[depth + 1]) {
+                        score += 3100;
+                    }
 
-                    else if (depth > 1 && move.hashCode() == killerMove[depth - 1])
-                        score += 1100;
+                    else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
+                        score += 3095;
+                    }
 
 
                 }
@@ -465,7 +470,7 @@ public class Search {
                     }
                 }
                 else {
-                    score += evaluation.PsqM(board,move);
+                    score += evaluation.PsqM(board.getPiece(move.getFrom()),move);
                 }
 
                 ScoredMove m = new ScoredMove(move, score);
