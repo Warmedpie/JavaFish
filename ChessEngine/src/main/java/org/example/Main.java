@@ -3,7 +3,6 @@ package org.example;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
 import com.github.bhlangonijr.chesslib.Side;
-import com.github.bhlangonijr.chesslib.Square;
 import com.github.bhlangonijr.chesslib.move.Move;
 import org.example.Engine.Evaluation;
 import org.example.Engine.Search;
@@ -65,7 +64,7 @@ public class Main {
 
                     else {
                         int depth = Integer.parseInt(arguments[1]);
-                        int time = 0;
+                        int time;
 
 
                         if (!Objects.equals(arguments[2], "-ut")) {
@@ -107,11 +106,17 @@ public class Main {
                 }
 
                 if (arguments[0].equalsIgnoreCase("static")) {
-                    if (b.getSideToMove() == Side.WHITE)
-                        System.out.println("score: " + ((float)e.evaluate(b) / 100));
-                    else
-                        System.out.println("score: " + ((float)-e.evaluate(b) / 100));
+                    if (b.getSideToMove() == Side.WHITE) {
+                        System.out.println("score: " + ((float) e.evaluate(b) / 100));
+                    }
+                    else {
+                        System.out.println("score: " + ((float) -e.evaluate(b) / 100));
+                    }
 
+                }
+
+                if (arguments[0].equalsIgnoreCase("exit")) {
+                    break;
                 }
 
             }
@@ -130,6 +135,7 @@ public class Main {
         System.out.println("SETUP {fen}: Loads a fen into the engine");
         System.out.println("ENGINE {MAX DEPTH} {MAX TIME IN MS} {-flag}: Generates an engine move, stopping after a certain depth or time (-p: play move, -nb no book, -ut for unlimited time (must replace TIME param))");
         System.out.println("STATIC: Returns the static evaluation of the current position");
+        System.out.println("EXIT: exits the program");
     }
 
     public static void playMove(Board b, String move) {
@@ -198,68 +204,67 @@ public class Main {
             }
 
             if (p == Piece.NONE) {
-                display[y].append("   ");
+                display[y].append("   ");
                 continue;
             }
 
             if (p==Piece.WHITE_PAWN) {
-                display[y].append(WHITE_FG).append(" P ");
+                display[y].append(WHITE_FG).append(" ♟ ");
                 continue;
             }
 
             if (p==Piece.WHITE_KNIGHT) {
-                display[y].append(WHITE_FG).append(" N ");
+                display[y].append(WHITE_FG).append(" ♞ ");
                 continue;
             }
 
             if (p==Piece.WHITE_BISHOP) {
-                display[y].append(WHITE_FG).append(" B ");
+                display[y].append(WHITE_FG).append(" ♝ ");
                 continue;
             }
 
             if (p==Piece.WHITE_ROOK) {
-                display[y].append(WHITE_FG).append(" R ");
+                display[y].append(WHITE_FG).append(" ♜ ");
                 continue;
             }
 
             if (p==Piece.WHITE_QUEEN) {
-                display[y].append(WHITE_FG).append(" Q ");
+                display[y].append(WHITE_FG).append(" ♛ ");
                 continue;
             }
 
             if (p==Piece.WHITE_KING) {
-                display[y].append(WHITE_FG).append(" K ");
+                display[y].append(WHITE_FG).append(" ♚ ");
                 continue;
             }
 
             if (p==Piece.BLACK_PAWN) {
-                display[y].append(BLACK_FG).append(" p ");
+                display[y].append(BLACK_FG).append(" ♟ ");
                 continue;
             }
 
             if (p==Piece.BLACK_KNIGHT) {
-                display[y].append(BLACK_FG).append(" n ");
+                display[y].append(BLACK_FG).append(" ♞ ");
                 continue;
             }
 
             if (p==Piece.BLACK_BISHOP) {
-                display[y].append(BLACK_FG).append(" b ");
+                display[y].append(BLACK_FG).append(" ♝ ");
                 continue;
             }
 
             if (p==Piece.BLACK_ROOK) {
-                display[y].append(BLACK_FG).append(" r ");
+                display[y].append(BLACK_FG).append(" ♜ ");
                 continue;
             }
 
             if (p==Piece.BLACK_QUEEN) {
-                display[y].append(BLACK_FG).append(" q ");
+                display[y].append(BLACK_FG).append(" ♛ ");
                 continue;
             }
 
             if (p==Piece.BLACK_KING) {
-                display[y].append(BLACK_FG).append(" k ");
-                continue;
+                display[y].append(BLACK_FG).append(" ♚ ");
             }
 
         }

@@ -59,36 +59,13 @@ public class Search {
 
     public int PVS(int alpha, int beta, int depth, int plyDeep) {
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-        if (duration / 1000000 > time) {
+        if (checkTimeOut())
             return -312312;
-        }
 
         nodes++;
-
         TranspositionEntry node = TT.get(board.getZobristKey());
-
-        if (node.depth >= depth) {
-
-            //this is the PV node.
-            if (node.nodeType == 0) {
-                return node.score;
-            }
-
-            //Fail-high (Cut-node)
-            if (node.nodeType == 1) {
-                if (node.score >= beta)
-                    return node.score;
-            }
-
-            //Fail-low (All-Node)
-            if (node.nodeType == -1) {
-                if (node.score <= alpha)
-                    return node.score;
-            }
-
+        if (nodeTableBreak(node,depth,alpha,beta)) {
+            return node.score;
         }
 
         int winLossDraw = mateScore(plyDeep);
@@ -115,7 +92,7 @@ public class Search {
 
             board.doMove(move);
 
-            int score = -9999999;
+            int score;
 
             //Late move reductions
             //Do not reduce when in check
@@ -187,18 +164,16 @@ public class Search {
     //At low depths, we use standard minimax with alpha beta to enhance ordering and accuracy of low depth nodes
     public int negamax(int alpha, int beta, int depth, int plyDeep) {
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-        if (duration / 1000000 > time) {
+        if (checkTimeOut())
             return -312312;
-        }
 
         nodes++;
         TranspositionEntry node = TT.get(board.getZobristKey());
+        if (nodeTableBreak(node,depth,alpha,beta)) {
+            return node.score;
+        }
 
         if (node.depth >= depth) {
-
             //this is the PV node.
             if (node.nodeType == 0) {
                 return node.score;
@@ -215,7 +190,6 @@ public class Search {
                 if (node.score <= alpha)
                     return node.score;
             }
-
         }
 
         int winLossDraw = mateScore(plyDeep);
@@ -298,12 +272,8 @@ public class Search {
 
     public int qSearch(int alpha, int beta, int depth) {
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-        if (duration / 1000000 > time) {
+        if (checkTimeOut())
             return -312312;
-        }
 
         nodes++;
         int staticEval = evaluation.evaluate(board);
@@ -363,32 +333,23 @@ public class Search {
         List<Move> legalMoves = board.legalMoves();
 
         //Return this list
-        List<ScoredMove> moves = new ArrayList<ScoredMove>();
+        List<ScoredMove> moves = new ArrayList<>();
 
         //Try all moves
         for (Move move : legalMoves) {
-            int score = 0;
+            int score;
             if (move != best) {
-                board.doMove(move);
-                //See if move is in TT
-                TranspositionEntry node = TT.get(board.getZobristKey());
-                if (node.depth > 0) {
-                    score = -node.score + 10000;
+                if (depth > 6) {
+                    board.doMove(move);
 
-                    //this was the PV node
-                    if (node.nodeType == 0)
-                        score += 10000;
+                    score = -qSearch(-beta,-alpha,4);
 
-                }
-                else if (depth > 6) {
-                    score = -qSearch(-beta,-alpha,4) - 900;
+                    board.undoMove();
                 }
                 //if not in TT, score based on static eval (Tapered)
                 else {
-                    score = evaluation.PsqM(board,move) - 900;
-
+                    score = evaluation.PsqM(board,move);
                 }
-                board.undoMove();
 
                 if (board.getPiece(move.getTo()) != Piece.NONE) {
                     int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
@@ -457,7 +418,7 @@ public class Search {
         List<Move> legalMoves = board.legalMoves();
 
         //Return this list
-        List<ScoredMove> moves = new ArrayList<ScoredMove>();
+        List<ScoredMove> moves = new ArrayList<>();
 
         //Try all moves
         for (Move move : legalMoves) {
@@ -472,10 +433,10 @@ public class Search {
             if (board.isKingAttacked())
                 aggressiveOrInCheck = true;
 
-            if (aggressiveOrInCheck) {
-                int score = evaluation.PsqM(board,move);
+            board.undoMove();
 
-                board.undoMove();
+            if (aggressiveOrInCheck) {
+                int score = 0;
 
                 int to = board.getPiece(move.getTo()).ordinal();
                 int from = board.getPiece(move.getFrom()).ordinal();
@@ -495,7 +456,7 @@ public class Search {
                         score += 1000 + orderValueScore.get(to) - orderValueScore.get(from);
                     }
                     //Equal Captures
-                    else if (orderValueScore.get(to) == orderValueScore.get(from)) {
+                    else if (Objects.equals(orderValueScore.get(to), orderValueScore.get(from))) {
                         score += 500;
                     }
                     //Bad captures
@@ -503,12 +464,12 @@ public class Search {
                         score += orderValueScore.get(to) - orderValueScore.get(from);
                     }
                 }
+                else {
+                    score += evaluation.PsqM(board,move);
+                }
 
                 ScoredMove m = new ScoredMove(move, score);
                 moves.add(m);
-            }
-            else {
-                board.undoMove();
             }
         }
 
@@ -521,6 +482,7 @@ public class Search {
 
     }
 
+    //Search Helper functions
     public int mateScore(int depth) {
 
         if (board.isRepetition())
@@ -538,47 +500,37 @@ public class Search {
         return 999999;
     }
 
-    public Move getBestMove() {
-        return TT.get(board.getZobristKey()).move;
+    boolean checkTimeOut() {
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
+
+        return duration / 1000000 > time;
     }
-    public Move getBestMove(Board b) {
-        return TT.get(b.getZobristKey()).move;
-    }
 
-    public List<Move> getPV() {
+    boolean nodeTableBreak(TranspositionEntry node, int depth, int alpha, int beta) {
+        if (node.depth >= depth) {
 
-        List<Move> toReturn = new ArrayList<>();
-
-        Board b = new Board();
-        b.loadFromFen(board.getFen());
-        int i = 0;
-        while (TT.get(b.getZobristKey()).depth > 0) {
-            if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
-                toReturn.add(TT.get(b.getZobristKey()).move);
-
-            if (b.getPiece(TT.get(b.getZobristKey()).move.getFrom()) != Piece.NONE)
-                b.doMove(TT.get(b.getZobristKey()).move);
-            else
-                break;
-            i++;
-
-            if (i > 20)
-                return toReturn;
+            //this is the PV node.
+            if (node.nodeType == 0) {
+                return true;
+            }
+            //Fail-high (Cut-node)
+            if (node.nodeType == 1) {
+                return node.score >= beta;
+            }
+            //Fail-low (All-Node)
+            if (node.nodeType == -1) {
+                return node.score <= alpha;
+            }
         }
 
-        return toReturn;
-    }
-
-    public int getNodes() {
-        return nodes;
-    }
-
-    void resetNodes() {
-        nodes = 0;
+        return false;
     }
 
     long startTime;
     int time = 0;
+
+    //Search call function
     public Move findMove(Board b, int maxDepth, int time, boolean useBook) {
         this.board = b;
 
@@ -616,7 +568,7 @@ public class Search {
             if (mateIn > 0)
                 break;
 
-            bestMove = getPV().get(0);
+            bestMove = getPV().getFirst();
         }
 
         return bestMove;
@@ -629,14 +581,33 @@ public class Search {
         TT.clear();
     }
 
-    int mateDisplayScore(int score) {
+    //Display functions
+    public List<Move> getPV() {
 
-        if (Math.abs(score) > 98999) {
-            return (int)(1000000 - Math.abs(score)) / 2;
+        List<Move> toReturn = new ArrayList<>();
+
+        Board b = new Board();
+        b.loadFromFen(board.getFen());
+        int i = 0;
+        while (TT.get(b.getZobristKey()).depth > 0) {
+            if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
+                toReturn.add(TT.get(b.getZobristKey()).move);
+
+            if (b.getPiece(TT.get(b.getZobristKey()).move.getFrom()) != Piece.NONE)
+                b.doMove(TT.get(b.getZobristKey()).move);
+            else
+                break;
+            i++;
+
+            if (i > 20)
+                return toReturn;
         }
 
-        return 0;
+        return toReturn;
+    }
 
+    public int getNodes() {
+        return nodes;
     }
 
     int displayStats(int score, int mateIn, int depth) {
@@ -654,7 +625,7 @@ public class Search {
 
         StringBuilder s = new StringBuilder();
         for (Move m : getPV()) {
-            s.append(m.toString() + " ");
+            s.append(m.toString()).append(" ");
         }
 
         String sign = "+";
@@ -671,11 +642,21 @@ public class Search {
         }
 
         if (duration > 1000000 && nodes > 0) {
-            System.out.println("Nodes searched: " + getNodes() + "(" + (long) getNodes() / (duration / 1000000) + "knps)");
+            System.out.println("Nodes searched: " + getNodes() + "(" + (long) getNodes() / (duration / 1000000) + "Kn/s)");
             System.out.println("First Move beta cut %: " + ((float)firstMoveBetaCuts/(float)firstMoves));
         }
 
         return 0;
+    }
+
+    int mateDisplayScore(int score) {
+
+        if (Math.abs(score) > 98999) {
+            return (1000000 - Math.abs(score)) / 2;
+        }
+
+        return 0;
+
     }
 
 }

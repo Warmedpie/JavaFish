@@ -7,7 +7,7 @@ import com.github.bhlangonijr.chesslib.move.Move;
 
 public class TranspositionTable {
 
-    Map<Long, TranspositionEntry> table = new HashMap<Long, TranspositionEntry>();
+    Map<Long, TranspositionEntry> table = new HashMap<>();
 
     void insert(Long key, TranspositionEntry entry) {
 

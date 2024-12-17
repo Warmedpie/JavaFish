@@ -18,10 +18,10 @@ public class Book {
                 String line = myReader.nextLine();
 
                 String[] data = line.split("_");
-                if (truncate(data[0]," ").length() > 0 && truncate(data[1]," ").length()> 0) {
+                if (!truncate(data[0], " ").isEmpty() && !truncate(data[1], " ").isEmpty()) {
                     String fen1 = truncate(data[0], " ");
                     if (!book.containsKey(fen1))
-                        book.put(fen1, new ArrayList<String>());
+                        book.put(fen1, new ArrayList<>());
 
                     book.get(fen1).add(truncate(data[1], " "));
                 }
@@ -29,9 +29,7 @@ public class Book {
             }
             myReader.close();
 
-        } catch (Exception e) {
-            System.out.println(e);
-        }
+        } catch (Exception ignore) {}
     }
 
     public String checkBook(String fen) {
