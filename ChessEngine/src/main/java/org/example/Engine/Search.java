@@ -93,19 +93,12 @@ public class Search {
             board.doMove(move);
 
             int score;
-
             //Late move reductions
             //Do not reduce when in check
             //do not reduce moves that are checks
-            //do not reduce captures
             int LMR = 0;
             if (!inCheck && !board.isKingAttacked() && i > 1) {
                 LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
-
-                if (i > 4) {
-                    LMR += i / 4;
-                }
-
             }
 
             //Search with the full window on first move
@@ -129,7 +122,7 @@ public class Search {
                 alpha = score;
                 bestMove = move;
 
-                MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth;
+                MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth + i;
 
             }
 
@@ -220,11 +213,24 @@ public class Search {
         Move bestMove = new Move(Square.A1,Square.A1);
         int alphaOrig = alpha;
 
+        int i = 0;
         for (ScoredMove scoredMove : orderedMoves) {
             Move move = scoredMove.move;
 
             boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+            boolean inCheck = board.isKingAttacked();
+
             board.doMove(move);
+
+            //Late move prune
+            //Do not prune captures
+            //do not prune checks or while in check
+            if (++i > orderedMoves.size() * 3 / 7) {
+                if (!board.isKingAttacked() && !inCheck && !capture) {
+                    board.undoMove();
+                    continue;
+                }
+            }
 
             int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
@@ -238,7 +244,7 @@ public class Search {
             //Fail-hard beta cut-off
             if (score >= beta) {
 
-                if (!capture && depth > 1) {
+                if (!capture) {
                     if (killerMove[depth] == 0)
                         killerMove[depth] = move.hashCode();
                 }
@@ -338,19 +344,18 @@ public class Search {
         //Try all moves
         for (Move move : legalMoves) {
             int score;
+
+            //Table PV move gets higher rating
             if (move != best) {
-                if (depth > 6) {
-                    board.doMove(move);
 
-                    score = -qSearch(-beta,-alpha,4);
+                board.doMove(move);
+                boolean inCheck = board.isKingAttacked();
+                board.undoMove();
 
-                    board.undoMove();
-                }
-                //if not in TT, score based on static eval (Tapered)
-                else {
-                    score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
-                }
+                //Piece square table score
+                score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
 
+                //Captures
                 if (board.getPiece(move.getTo()) != Piece.NONE) {
                     int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
                     int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
@@ -374,15 +379,13 @@ public class Search {
                     }
 
                     else
-                        score += 2200;
+                        score += 2200 + (to - from);
 
                 }
                 else {
 
                     score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
-
-                    if (depth < 5)
-                        score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
+                    score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
 
 
                     if (move.hashCode() == killerMove[depth])
@@ -395,9 +398,11 @@ public class Search {
                     else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
                         score += 3095;
                     }
-
-
                 }
+
+                if (inCheck)
+                    score += 2500;
+
             }
             else {
                 score = 9999999;
