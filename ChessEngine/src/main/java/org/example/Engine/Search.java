@@ -33,15 +33,15 @@ public class Search {
 
     public Search() {
         orderValueScore.add(71);
-        orderValueScore.add(279);
-        orderValueScore.add(279);
+        orderValueScore.add(337);
+        orderValueScore.add(365);
         orderValueScore.add(456);
         orderValueScore.add(905);
         orderValueScore.add(0);
 
         orderValueScore.add(71);
-        orderValueScore.add(279);
-        orderValueScore.add(279);
+        orderValueScore.add(337);
+        orderValueScore.add(365);
         orderValueScore.add(456);
         orderValueScore.add(905);
         orderValueScore.add(0);
@@ -77,7 +77,7 @@ public class Search {
         }
 
         //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth, alpha, beta, node.move);
+        List<ScoredMove> orderedMoves = orderMoves(depth, node.move);
 
         int alphaOrig = alpha;
 
@@ -97,7 +97,7 @@ public class Search {
             //Do not reduce when in check
             //do not reduce moves that are checks
             int LMR = 0;
-            if (!inCheck && !board.isKingAttacked() && i > 1) {
+            if (!inCheck && !board.isKingAttacked()) {
                 LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
             }
 
@@ -106,7 +106,6 @@ public class Search {
                 score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
             }
             else {
-
                 //Search with a null window until alpha improves
                 score = -PVS(-alpha-1,-alpha,depth-1 - LMR, plyDeep + 1);
 
@@ -208,29 +207,17 @@ public class Search {
         }
 
         //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth, alpha, beta, node.move);
+        List<ScoredMove> orderedMoves = orderMoves(depth, node.move);
 
         Move bestMove = new Move(Square.A1,Square.A1);
         int alphaOrig = alpha;
 
-        int i = 0;
         for (ScoredMove scoredMove : orderedMoves) {
             Move move = scoredMove.move;
 
             boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
-            boolean inCheck = board.isKingAttacked();
 
             board.doMove(move);
-
-            //Late move prune
-            //Do not prune captures
-            //do not prune checks or while in check
-            if (++i > orderedMoves.size() * 3 / 7) {
-                if (!board.isKingAttacked() && !inCheck && !capture) {
-                    board.undoMove();
-                    continue;
-                }
-            }
 
             int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
@@ -333,7 +320,7 @@ public class Search {
         return alpha;
     }
 
-    public List<ScoredMove> orderMoves(int depth, int alpha, int beta, Move best) {
+    public List<ScoredMove> orderMoves(int depth, Move best) {
 
         //Get Legal Moves
         List<Move> legalMoves = board.legalMoves();
@@ -347,10 +334,6 @@ public class Search {
 
             //Table PV move gets higher rating
             if (move != best) {
-
-                board.doMove(move);
-                boolean inCheck = board.isKingAttacked();
-                board.undoMove();
 
                 //Piece square table score
                 score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
@@ -374,8 +357,8 @@ public class Search {
                     }
 
                     //Equal value capture
-                    else if (to == from) {
-                        score += 5000 + from;
+                    else if (Math.abs(to - from) < 30) {
+                        score += 5000 + to - from;
                     }
 
                     else
@@ -400,9 +383,6 @@ public class Search {
                     }
                 }
 
-                if (inCheck)
-                    score += 2500;
-
             }
             else {
                 score = 9999999;
@@ -415,7 +395,6 @@ public class Search {
 
         if (moves.size() > 1) {
             Collections.sort(moves);
-            Collections.reverse(moves);
         }
 
         return moves;
@@ -466,8 +445,8 @@ public class Search {
                         score += 1000 + orderValueScore.get(to) - orderValueScore.get(from);
                     }
                     //Equal Captures
-                    else if (Objects.equals(orderValueScore.get(to), orderValueScore.get(from))) {
-                        score += 500;
+                    else if (Math.abs(orderValueScore.get(to) - orderValueScore.get(from)) < 30) {
+                        score += 500 + to - from;
                     }
                     //Bad captures
                     else {
@@ -485,7 +464,6 @@ public class Search {
 
         if (moves.size() > 1) {
             Collections.sort(moves);
-            Collections.reverse(moves);
         }
 
         return moves;
@@ -507,7 +485,7 @@ public class Search {
             return 0;
         }
 
-        return 999999;
+        return 2;
     }
 
     boolean checkTimeOut() {

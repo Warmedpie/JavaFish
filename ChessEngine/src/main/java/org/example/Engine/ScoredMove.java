@@ -15,6 +15,6 @@ public class ScoredMove implements Comparable<ScoredMove> {
 
     @Override
     public int compareTo(ScoredMove o) {
-        return Integer.compare(this.score, o.score);
+        return -Integer.compare(this.score, o.score);
     }
 }

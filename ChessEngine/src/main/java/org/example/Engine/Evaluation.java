@@ -331,6 +331,9 @@ public class Evaluation {
 
                 whiteMat += 3;
 
+                if (Square.squareAt(i).getRank() == Rank.RANK_1)
+                    score -= 25;
+
                 continue;
             }
 
@@ -339,6 +342,9 @@ public class Evaluation {
                 egScoreWhite += egBishop + bishopTableWhite[i];
 
                 whiteMat += 3;
+
+                if (Square.squareAt(i).getRank() == Rank.RANK_1)
+                    score -= 25;
 
                 continue;
             }
@@ -386,6 +392,9 @@ public class Evaluation {
 
                 blackMat += 3;
 
+                if (Square.squareAt(i).getRank() == Rank.RANK_8)
+                    score += 25;
+
                 continue;
             }
 
@@ -395,6 +404,9 @@ public class Evaluation {
                 egScoreBlack += egBishop + bishopTableBlack[i];
 
                 blackMat += 3;
+
+                if (Square.squareAt(i).getRank() == Rank.RANK_8)
+                    score += 25;
 
                 continue;
             }
