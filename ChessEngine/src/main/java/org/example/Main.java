@@ -6,11 +6,16 @@ import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.move.Move;
 import org.example.Engine.Evaluation;
 import org.example.Engine.Search;
+import org.example.UCI.CommandHandler;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
+
+        boolean UCI = true;
 
         Board b = new Board();
         Search search = new Search();
@@ -23,105 +28,115 @@ public class Main {
         boolean playResult = false;
         boolean useBook = true;
 
+        CommandHandler uci = new CommandHandler();
+
         while(true) {
+            if (!UCI) {
+                displayBoard(b);
 
-            displayBoard(b);
-
-            System.out.println("Type a command (help for options)");
+                System.out.println("Type a command (help for options)");
+            }
 
             String command = scanner.nextLine();
-
-            if (command.equalsIgnoreCase("help")) {
-                help();
-            }
-
-
             String[] arguments = command.split("\\s+");
 
-            try {
-                if (arguments[0].equalsIgnoreCase("play")) {
-                    playMove(b, arguments[1]);
-                }
-
-                if (arguments[0].equalsIgnoreCase("undo")) {
-                    b.undoMove();
-                }
-
-                if (arguments[0].equalsIgnoreCase("setup")) {
-                    b.loadFromFen(command.substring(6));
-                }
-
-                if (arguments[0].equalsIgnoreCase("engine")) {
-
-                    if (arguments.length == 1) {
-                        Move m = search.findMove(b, depthToSearch, timeToSearch, useBook);
-
-                        if (playResult) {
-                            b.doMove(m);
-                        }
-
-                    }
-
-                    else {
-                        int depth = Integer.parseInt(arguments[1]);
-                        int time;
-
-
-                        if (!Objects.equals(arguments[2], "-ut")) {
-                            time = Integer.parseInt(arguments[2]);
-                        }
-                        else {
-                            time = 999999999;
-                        }
-                        if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-nb")) {
-                            useBook = false;
-                        }
-                        if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-nb")) {
-                            useBook = false;
-                        }
-                        if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-nb")) {
-                            useBook = false;
-                        }
-
-                        depthToSearch = depth;
-                        timeToSearch = time;
-
-                        Move m = search.findMove(b, depth, time, useBook);
-
-                        if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-p")) {
-                            playResult = true;
-                            b.doMove(m);
-                        }
-                        if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-p")) {
-                            playResult = true;
-                            b.doMove(m);
-                        }
-                        if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-p")) {
-                            playResult = true;
-                            b.doMove(m);
-                        }
-
-                    }
-
-                }
-
-                if (arguments[0].equalsIgnoreCase("static")) {
-                    if (b.getSideToMove() == Side.WHITE) {
-                        System.out.println("score: " + ((float) e.evaluate(b) / 100));
-                    }
-                    else {
-                        System.out.println("score: " + ((float) -e.evaluate(b) / 100));
-                    }
-
-                }
-
-                if (arguments[0].equalsIgnoreCase("exit")) {
+            for (String argument : arguments) {
+                if (argument.equalsIgnoreCase("UCI")) {
+                    UCI = true;
                     break;
                 }
-
             }
 
-            catch(Exception ignore) {}
+            if (!UCI) {
+                if (command.equalsIgnoreCase("help")) {
+                    help();
+                }
+
+                try {
+
+                    if (arguments[0].equalsIgnoreCase("play")) {
+                        playMove(b, arguments[1]);
+                    }
+
+                    if (arguments[0].equalsIgnoreCase("undo")) {
+                        b.undoMove();
+                    }
+
+                    if (arguments[0].equalsIgnoreCase("setup")) {
+                        b.loadFromFen(command.substring(6));
+                    }
+
+                    if (arguments[0].equalsIgnoreCase("engine")) {
+
+                        if (arguments.length == 1) {
+                            Move m = search.findMove_noUCI(b, depthToSearch, timeToSearch, useBook);
+
+                            if (playResult) {
+                                b.doMove(m);
+                            }
+
+                        } else {
+                            int depth = Integer.parseInt(arguments[1]);
+                            int time;
+
+
+                            if (!Objects.equals(arguments[2], "-ut")) {
+                                time = Integer.parseInt(arguments[2]);
+                            } else {
+                                time = 999999999;
+                            }
+                            if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-nb")) {
+                                useBook = false;
+                            }
+                            if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-nb")) {
+                                useBook = false;
+                            }
+                            if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-nb")) {
+                                useBook = false;
+                            }
+
+                            depthToSearch = depth;
+                            timeToSearch = time;
+
+                            Move m = search.findMove_noUCI(b, depth, time, useBook);
+
+                            if (arguments.length == 4 && arguments[3].equalsIgnoreCase("-p")) {
+                                playResult = true;
+                                b.doMove(m);
+                            }
+                            if (arguments.length == 5 && arguments[3].equalsIgnoreCase("-p")) {
+                                playResult = true;
+                                b.doMove(m);
+                            }
+                            if (arguments.length == 5 && arguments[4].equalsIgnoreCase("-p")) {
+                                playResult = true;
+                                b.doMove(m);
+                            }
+
+                        }
+
+                    }
+
+                    if (arguments[0].equalsIgnoreCase("static")) {
+                        if (b.getSideToMove() == Side.WHITE) {
+                            System.out.println("score: " + ((float) e.evaluate(b) / 100));
+                        } else {
+                            System.out.println("score: " + ((float) -e.evaluate(b) / 100));
+                        }
+
+                    }
+
+                    if (arguments[0].equalsIgnoreCase("exit")) {
+                        break;
+                    }
+
+                } catch (Exception ignore) {
+                }
+            }
+
+            else {
+                uci.parse(command);
+            }
 
 
         }

@@ -65,6 +65,7 @@ public class Search {
         nodes++;
         TranspositionEntry node = TT.get(board.getZobristKey());
         if (nodeTableBreak(node,depth,alpha,beta)) {
+            TBhits++;
             return node.score;
         }
 
@@ -162,6 +163,7 @@ public class Search {
         nodes++;
         TranspositionEntry node = TT.get(board.getZobristKey());
         if (nodeTableBreak(node,depth,alpha,beta)) {
+            TBhits++;
             return node.score;
         }
 
@@ -518,8 +520,20 @@ public class Search {
     long startTime;
     int time = 0;
 
+    public void kill() {
+        time = 0;
+    }
+
+    public void setup(Board b, int time) {
+        this.time = time;
+        this.board = b;
+
+        startTime = System.nanoTime();
+
+    }
+
     //Search call function
-    public Move findMove(Board b, int maxDepth, int time, boolean useBook) {
+    public Move findMove_noUCI(Board b, int maxDepth, int time, boolean useBook) {
         this.board = b;
 
         for (int p = 0; p < 64; p++) {
@@ -563,8 +577,9 @@ public class Search {
 
     }
 
-    void configureStats(int time) {
+    public void configureStats(int time) {
         this.time = time;
+        this.TBhits = 0;
         nodes = 0;
         TT.clear();
     }
@@ -596,6 +611,26 @@ public class Search {
 
     public int getNodes() {
         return nodes;
+    }
+
+    public int getnps() {
+
+        long endTime = System.nanoTime();
+        long duration = Math.max(1,(endTime - startTime));
+
+        return 1000 * (int) (getNodes() / (duration / 1000000));
+    }
+
+    public int getTime() {
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime);
+
+        return (int)(duration / 1000000);
+    }
+
+    int TBhits = 0;
+    public int getTBhits() {
+        return TBhits;
     }
 
     int displayStats(int score, int mateIn, int depth) {
