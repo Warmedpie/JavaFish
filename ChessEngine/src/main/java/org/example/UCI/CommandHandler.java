@@ -1,6 +1,7 @@
 package org.example.UCI;
 
 import com.github.bhlangonijr.chesslib.Board;
+import com.github.bhlangonijr.chesslib.Side;
 import org.example.Engine.Search;
 
 public class CommandHandler {
@@ -83,6 +84,14 @@ public class CommandHandler {
                 else if (arguments[i + 1].equalsIgnoreCase("STARTPOS")) {
                     board = new Board();
                     i += 1;
+
+                    if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
+                        for (int q = i + 2; q < arguments.length; q++) {
+                            System.out.println(arguments[q]);
+                            board.doMove(arguments[q]);
+                        }
+                    }
+
                 }
 
                 continue;
@@ -127,13 +136,17 @@ public class CommandHandler {
                     }
                     if (arguments[i].equalsIgnoreCase("wtime")) {
                         i++;
-                        smartTime += Integer.parseInt(arguments[i++])/20;
+                        if (board.getSideToMove() == Side.WHITE)
+                            smartTime += Integer.parseInt(arguments[i++])/60;
+                        else i++;
 
                         continue;
                     }
                     if (arguments[i].equalsIgnoreCase("btime")) {
                         i++;
-                        smartTime += Integer.parseInt(arguments[i++])/20;
+                        if (board.getSideToMove() == Side.BLACK)
+                            smartTime += Integer.parseInt(arguments[i++])/60;
+                        else i++;
 
                         continue;
                     }

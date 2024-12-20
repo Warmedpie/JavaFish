@@ -570,7 +570,7 @@ public class Search {
             if (mateIn > 0)
                 break;
 
-            bestMove = getPV().getFirst();
+            bestMove = getPV().get(0);
         }
 
         return bestMove;
