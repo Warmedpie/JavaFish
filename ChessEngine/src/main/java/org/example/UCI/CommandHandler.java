@@ -11,6 +11,8 @@ public class CommandHandler {
     Search search = new Search();
     Board board = new Board();
 
+    int multiPv = 1;
+
     ThreadEngine engine = new ThreadEngine();
 
     public void parse(String command) {
@@ -24,6 +26,7 @@ public class CommandHandler {
 
                 System.out.println("id name JavaBot v1.0");
                 System.out.println("id author Warmedpie");
+                System.out.println("option name MultiPV type spin default 1 min 1 max 3");
                 System.out.println("uciok");
 
                 continue;
@@ -49,6 +52,18 @@ public class CommandHandler {
             }
 
             if (argument.equalsIgnoreCase("SETOPTION")) {
+                if (arguments.length > i + 1) {
+                    if (arguments[i + 1].equalsIgnoreCase("name")) {
+                        if (arguments.length > i + 4) {
+                            if (arguments[i + 2].equalsIgnoreCase("MultiPV") && arguments[i + 3].equalsIgnoreCase("value")) {
+                                multiPv = Math.min(Integer.parseInt(arguments[i + 4]),3);
+
+                                if (multiPv < 1)
+                                    multiPv = 1;
+                            }
+                        }
+                    }
+                }
                 continue;
             }
 
@@ -64,34 +79,34 @@ public class CommandHandler {
             }
 
             if (argument.equalsIgnoreCase("POSITION")) {
+                if (arguments.length > i + 1) {
+                    if (arguments[i + 1].equalsIgnoreCase("FEN")) {
+                        i++;
 
-                if (arguments[i + 1].equalsIgnoreCase("FEN")) {
-                    i++;
+                        board.loadFromFen(arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i]);
 
-                    board.loadFromFen(arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i]);
-
-                    if (i + 1 == arguments.length) {
-                        continue;
-                    }
-
-                    if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
-                        for (int q = i + 2; q < arguments.length; q++) {
-                            System.out.println(arguments[q]);
-                            board.doMove(arguments[q]);
+                        if (arguments.length > i + 1) {
+                            if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
+                                for (int q = i + 2; q < arguments.length; q++) {
+                                    System.out.println(arguments[q]);
+                                    board.doMove(arguments[q]);
+                                }
+                            }
                         }
                     }
-                }
-                else if (arguments[i + 1].equalsIgnoreCase("STARTPOS")) {
-                    board = new Board();
-                    i += 1;
-
-                    if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
-                        for (int q = i + 2; q < arguments.length; q++) {
-                            System.out.println(arguments[q]);
-                            board.doMove(arguments[q]);
+                    else if (arguments[i + 1].equalsIgnoreCase("STARTPOS")) {
+                        board = new Board();
+                        i += 1;
+                        if (arguments.length > i + 1) {
+                            if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
+                                for (int q = i + 2; q < arguments.length; q++) {
+                                    System.out.println(arguments[q]);
+                                    board.doMove(arguments[q]);
+                                }
+                            }
                         }
-                    }
 
+                    }
                 }
 
                 continue;
@@ -173,7 +188,7 @@ public class CommandHandler {
                     moveTime = smartTime;
                 }
 
-                engine.init(board,depth,moveTime);
+                engine.init(board,depth,moveTime, multiPv);
                 engine.start();
 
                 break;

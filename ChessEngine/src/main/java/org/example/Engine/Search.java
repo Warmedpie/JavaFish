@@ -6,6 +6,7 @@ import com.github.bhlangonijr.chesslib.Square;
 import com.github.bhlangonijr.chesslib.move.Move;
 import com.github.bhlangonijr.chesslib.Side;
 
+import javax.naming.ldap.PagedResultsResponseControl;
 import java.util.*;
 
 public class Search {
@@ -56,7 +57,104 @@ public class Search {
         }
 
     }
+    public int PVSIgnore(int alpha, int beta, int depth, int plyDeep, List<Move> ignore) {
 
+        if (checkTimeOut())
+            return -312312;
+
+        nodes++;
+
+        int winLossDraw = mateScore(plyDeep);
+        if (winLossDraw < 1)
+            return winLossDraw;
+
+        if (depth <= 2) {
+            return negamax(alpha, beta, depth, plyDeep);
+        }
+
+        //Order Moves
+        List<ScoredMove> orderedMoves = orderMoves(depth, null);
+
+        int alphaOrig = alpha;
+
+        Move bestMove = new Move(Square.A1,Square.A1);
+
+        int i = 0;
+        boolean inCheck = board.isKingAttacked();
+        for (ScoredMove scoredMove : orderedMoves) {
+            Move move = scoredMove.move;
+
+            if (plyDeep == 0 && ignore.contains(move)) {
+                continue;
+            }
+
+            boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+
+            board.doMove(move);
+
+            int score;
+            //Late move reductions
+            //Do not reduce when in check
+            //do not reduce moves that are checks
+            int LMR = 0;
+            if (!inCheck && !board.isKingAttacked()) {
+                LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
+            }
+
+            //Search with the full window on first move
+            if (i == 0) {
+                score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
+            }
+            else {
+                //Search with a null window until alpha improves
+                score = -PVS(-alpha-1,-alpha,depth-1 - LMR, plyDeep + 1);
+
+                //re-search required
+                if (score > alpha && beta - alpha > 1) {
+                    score = -PVS(-beta,-alpha,depth-1, plyDeep + 1);
+                }
+
+            }
+            board.undoMove();
+
+            if (score > alpha) {
+                alpha = score;
+                bestMove = move;
+
+                MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth + i;
+
+            }
+
+            //Fail-hard beta cut-off
+            if (i==0)
+                firstMoves++;
+            if (score >= beta) {
+
+                if (!capture) {
+                    HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth*depth;
+
+                    if (killerMove[depth] == 0)
+                        killerMove[depth] = move.hashCode();
+                }
+
+                if (i == 0)
+                    firstMoveBetaCuts ++;
+
+                break;
+
+            }
+
+            i++;
+        }
+
+        if (ignore.isEmpty())
+            insertTable(alpha, beta, alphaOrig, depth, bestMove);
+
+        multipv[ignore.size()] = new ScoredMove(bestMove, alpha);
+
+        return Math.min(alpha,beta);
+
+    }
     public int PVS(int alpha, int beta, int depth, int plyDeep) {
 
         if (checkTimeOut())
@@ -520,60 +618,11 @@ public class Search {
     long startTime;
     int time = 0;
 
-    public void kill() {
-        time = 0;
-    }
-
     public void setup(Board b, int time) {
         this.time = time;
         this.board = b;
 
         startTime = System.nanoTime();
-
-    }
-
-    //Search call function
-    public Move findMove_noUCI(Board b, int maxDepth, int time, boolean useBook) {
-        this.board = b;
-
-        for (int p = 0; p < 64; p++) {
-            killerMove[p] = 0;
-            for (int s = 0; s < 64; s++) {
-                HistoryHeuristic[p][s] = 0;
-                MiniHistory[p][s] = 0;
-            }
-        }
-
-        firstMoveBetaCuts = 0;
-        firstMoves = 0;
-
-        //Check the opening book
-        Move openingMove = openingBook.getOpening(b);
-        if (useBook && openingMove != null) {
-            System.out.println("Book move: " + openingMove);
-            return openingMove;
-        }
-
-        startTime = System.nanoTime();
-        configureStats(time);
-
-        //Iterative deepening
-        Move bestMove = new Move(Square.A1,Square.A1);
-        for (int depth = 3; depth <= maxDepth; depth++) {
-
-            int score = PVS(-9999999, 9999999, depth, 0);
-            int mateIn = mateDisplayScore(score);
-
-            if (displayStats(score,mateIn,depth) == -1)
-                break;
-
-            if (mateIn > 0)
-                break;
-
-            bestMove = getPV().get(0);
-        }
-
-        return bestMove;
 
     }
 
@@ -585,12 +634,40 @@ public class Search {
     }
 
     //Display functions
+    ScoredMove[] multipv = new ScoredMove[5];
     public List<Move> getPV() {
 
         List<Move> toReturn = new ArrayList<>();
 
         Board b = new Board();
         b.loadFromFen(board.getFen());
+        int i = 0;
+        while (TT.get(b.getZobristKey()).depth > 0) {
+            if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
+                toReturn.add(TT.get(b.getZobristKey()).move);
+
+            if (b.getPiece(TT.get(b.getZobristKey()).move.getFrom()) != Piece.NONE)
+                b.doMove(TT.get(b.getZobristKey()).move);
+            else
+                break;
+            i++;
+
+            if (i > 20)
+                return toReturn;
+        }
+
+        return toReturn;
+    }
+
+    public List<Move> getPV(int n) {
+
+        List<Move> toReturn = new ArrayList<>();
+        toReturn.add(multipv[n].move);
+
+        Board b = new Board();
+        b.loadFromFen(board.getFen());
+        b.doMove(multipv[n].move);
+
         int i = 0;
         while (TT.get(b.getZobristKey()).depth > 0) {
             if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
@@ -631,55 +708,6 @@ public class Search {
     int TBhits = 0;
     public int getTBhits() {
         return TBhits;
-    }
-
-    int displayStats(int score, int mateIn, int depth) {
-        if (board.getSideToMove() == Side.BLACK) {
-            score *= -1;
-        }
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-
-        if (duration/ 1000000 > time)
-            return -1;
-
-        System.out.println("depth: " + depth + ": " + duration / 1000000 + "ms");
-
-        StringBuilder s = new StringBuilder();
-        for (Move m : getPV()) {
-            s.append(m.toString()).append(" ");
-        }
-
-        String sign = "+";
-
-        if (score < 0)
-            sign = "";
-        if (score < -98999)
-            sign = "-";
-
-        if (mateIn == 0)
-            System.out.println(sign + ((float)score / 100) + ": " + s);
-        else {
-            System.out.println(sign + "M" + mateIn + ": " + s);
-        }
-
-        if (duration > 1000000 && nodes > 0) {
-            System.out.println("Nodes searched: " + getNodes() + "(" + (long) getNodes() / (duration / 1000000) + "Kn/s)");
-            System.out.println("First Move beta cut %: " + ((float)firstMoveBetaCuts/(float)firstMoves));
-        }
-
-        return 0;
-    }
-
-    int mateDisplayScore(int score) {
-
-        if (Math.abs(score) > 98999) {
-            return (1000000 - Math.abs(score)) / 2;
-        }
-
-        return 0;
-
     }
 
 }

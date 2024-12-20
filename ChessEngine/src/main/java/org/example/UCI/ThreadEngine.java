@@ -2,6 +2,7 @@ package org.example.UCI;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.move.Move;
+import org.example.Engine.ScoredMove;
 import org.example.Engine.Search;
 
 import java.util.ArrayList;
@@ -11,12 +12,14 @@ public class ThreadEngine extends Thread {
     Board b = new Board();
     int depth = 0;
     int moveTime = 0;
+    int multiPv = 1;
     Search s = new Search();
 
-    public void init(Board b, int depth, int moveTime) {
+    public void init(Board b, int depth, int moveTime, int mPv) {
         this.b = b;
         this.depth = depth;
         this.moveTime = moveTime;
+        this.multiPv = mPv;
         this.s = new Search();
     }
 
@@ -28,38 +31,49 @@ public class ThreadEngine extends Thread {
     public void run() {
         s.setup(b,moveTime);
 
-        List<Move> pv = new ArrayList<>();
+        int legalMoves = b.legalMoves().size();
 
+        List<Move> pv = new ArrayList<>();
+        Move best = null;
             for (int i = 3; i <= depth; i++) {
 
-                int score = s.PVS(-9999999, 9999999, i, 0);
+                List<Move> ignore = new ArrayList<>();
 
-                if (score == -312312 || score == 312312)
-                    break;
+                for (int pvL = 0; pvL < Math.min(multiPv, legalMoves); pvL++) {
 
-                pv = s.getPV();
+                    int score = s.PVSIgnore(-9999999, 9999999, i, 0, ignore);
 
-                StringBuilder info = new StringBuilder();
+                    if (score == -312312 || score == 312312)
+                        break;
 
-                int mateScore = mateDisplayScore(score);
-                if (mateScore == 0) {
-                    info.append("info multipv 1 depth ").append(i).append(" seldepth ").append(pv.size()).append(" score cp ").append(score).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
-                    for (Move m : pv) {
-                        info.append(m.toString()).append(" ");
+                    pv = s.getPV(pvL);
+                    ignore.add(pv.get(0));
+
+                    if (pvL == 0)
+                        best = pv.get(0);
+
+                    StringBuilder info = new StringBuilder();
+
+                    int mateScore = mateDisplayScore(score);
+                    if (mateScore == 0) {
+                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score cp ").append(score).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
+                        for (Move m : pv) {
+                            info.append(m.toString()).append(" ");
+                        }
+                    } else {
+                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score mate ").append(mateScore).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
+                        for (Move m : pv) {
+                            info.append(m.toString()).append(" ");
+                        }
                     }
-                }
-                else {
-                    info.append("info multipv 1 depth ").append(i).append(" seldepth ").append(pv.size()).append(" score mate ").append(mateScore).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
-                    for (Move m : pv) {
-                        info.append(m.toString()).append(" ");
-                    }
-                }
 
-                System.out.println(info);
+                    System.out.println(info);
+
+                }
 
 
             }
-        System.out.println("bestmove " + pv.get(0));
+        System.out.println("bestmove " + best);
     }
 
     int mateDisplayScore(int score) {
