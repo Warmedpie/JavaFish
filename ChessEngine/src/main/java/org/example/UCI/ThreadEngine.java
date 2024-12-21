@@ -2,7 +2,6 @@ package org.example.UCI;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.move.Move;
-import org.example.Engine.ScoredMove;
 import org.example.Engine.Search;
 
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ public class ThreadEngine extends Thread {
         s.setup(b,moveTime);
 
         int legalMoves = b.legalMoves().size();
+        boolean book = false;
 
         List<Move> pv = new ArrayList<>();
         Move best = null;
@@ -41,7 +41,9 @@ public class ThreadEngine extends Thread {
 
                 for (int pvL = 0; pvL < Math.min(multiPv, legalMoves); pvL++) {
 
-                    int score = s.PVSIgnore(-9999999, 9999999, i, 0, ignore);
+                    int score = 0;
+
+                    score = s.PVSIgnore(-9999999, 9999999, i, 0, ignore);
 
                     if (score == -312312 || score == 312312)
                         break;
@@ -52,9 +54,14 @@ public class ThreadEngine extends Thread {
                     if (pvL == 0)
                         best = pv.get(0);
 
+
                     StringBuilder info = new StringBuilder();
 
                     int mateScore = mateDisplayScore(score);
+
+                    if (score < 0)
+                        mateScore *= -1;
+
                     if (mateScore == 0) {
                         info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score cp ").append(score).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
                         for (Move m : pv) {
@@ -71,7 +78,8 @@ public class ThreadEngine extends Thread {
 
                 }
 
-
+                if (book)
+                    break;
             }
         System.out.println("bestmove " + best);
     }

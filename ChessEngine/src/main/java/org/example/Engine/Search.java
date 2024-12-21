@@ -15,8 +15,6 @@ public class Search {
     Board board = new Board();
     TranspositionTable TT = new TranspositionTable();
 
-    Book openingBook = new Book();
-
 
     List<Integer> orderValueScore = new ArrayList<>();
 
