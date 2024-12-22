@@ -26,7 +26,7 @@ public class CommandHandler {
 
                 System.out.println("id name JavaBot v1.0");
                 System.out.println("id author Warmedpie");
-                System.out.println("option name MultiPV type spin default 1 min 1 max 3");
+                System.out.println("option name MultiPV type spin default 1 min 1 max 5");
                 System.out.println("uciok");
 
                 continue;
@@ -56,7 +56,7 @@ public class CommandHandler {
                     if (arguments[i + 1].equalsIgnoreCase("name")) {
                         if (arguments.length > i + 4) {
                             if (arguments[i + 2].equalsIgnoreCase("MultiPV") && arguments[i + 3].equalsIgnoreCase("value")) {
-                                multiPv = Math.min(Integer.parseInt(arguments[i + 4]),3);
+                                multiPv = Math.min(Integer.parseInt(arguments[i + 4]),5);
 
                                 if (multiPv < 1)
                                     multiPv = 1;
