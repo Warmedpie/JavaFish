@@ -37,7 +37,7 @@ public class ThreadEngine extends Thread {
         //Check the opening book
         Move openingMove = openingBook.getOpening(b);
         if (openingMove != null) {
-            System.out.println("bestmove" + openingMove);
+            System.out.println("bestmove " + openingMove);
             return;
         }
 

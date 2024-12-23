@@ -10,7 +10,7 @@ public class Book {
 
     public Book() {
         try {
-            String file ="src/main/resources/Book.txt";
+            String file ="Book.txt";
 
             File myObj = new File(file);
             Scanner myReader = new Scanner(myObj);
@@ -30,6 +30,7 @@ public class Book {
             myReader.close();
 
         } catch (Exception ignore) {}
+
     }
 
     public String checkBook(String fen) {
