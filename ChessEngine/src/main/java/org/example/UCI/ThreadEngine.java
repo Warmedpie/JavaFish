@@ -2,6 +2,7 @@ package org.example.UCI;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.move.Move;
+import org.example.Engine.Book;
 import org.example.Engine.Search;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ public class ThreadEngine extends Thread {
     int moveTime = 0;
     int multiPv = 1;
     Search s = new Search();
+    Book openingBook = new Book();
 
     public void init(Board b, int depth, int moveTime, int mPv) {
         this.b = b;
@@ -31,7 +33,13 @@ public class ThreadEngine extends Thread {
         s.setup(b,moveTime);
 
         int legalMoves = b.legalMoves().size();
-        boolean book = false;
+
+        //Check the opening book
+        Move openingMove = openingBook.getOpening(b);
+        if (openingMove != null) {
+            System.out.println("bestmove" + openingMove);
+            return;
+        }
 
         List<Move> pv = new ArrayList<>();
         Move best = null;
@@ -77,9 +85,6 @@ public class ThreadEngine extends Thread {
                     System.out.println(info);
 
                 }
-
-                if (book)
-                    break;
             }
         System.out.println("bestmove " + best);
     }
