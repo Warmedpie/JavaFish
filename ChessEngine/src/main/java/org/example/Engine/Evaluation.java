@@ -260,6 +260,14 @@ public class Evaluation {
         int atkDefScoreWhite = 0;
         int atkDefScoreBlack = 0;
 
+        int imbalanceMG = 0;
+        int imbalanceEG = 0;
+        int whiteBishops = 0;
+        int blackBishops = 0;
+
+        int[] whitePawns = new int[]{0,0,0,0,0,0,0,0};
+        int[] blackPawns = new int[]{0,0,0,0,0,0,0,0};
+
         int i = -1;
         for (Piece p : board.boardToArray()) {
             i++;
@@ -267,6 +275,10 @@ public class Evaluation {
             //Attackers and defenders
             if (i < 64) {
                 if (isKingSquare(board, i) == 1) {
+
+                    if (board.getPiece(Square.squareAt(i)) == Piece.WHITE_PAWN)
+                        atkDefScoreWhite += 27;
+
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
                         atkDefScoreBlack += 81;
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.BISHOP) != 0)
@@ -281,6 +293,10 @@ public class Evaluation {
                         atkDefScoreWhite += 45;
                 }
                 if (isKingSquare(board, i) == -1) {
+
+                    if (board.getPiece(Square.squareAt(i)) == Piece.BLACK_PAWN)
+                        atkDefScoreBlack += 27;
+
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
                         atkDefScoreWhite += 81;
                     if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.BISHOP) != 0)
@@ -318,6 +334,11 @@ public class Evaluation {
             if (p==Piece.WHITE_PAWN) {
                 mgScoreWhite += mgPawn + mgPawnTableWhite[i];
                 egScoreWhite += egPawn + egPawnTableWhite[i];
+
+                imbalanceMG += mgPawn;
+                imbalanceEG += egPawn;
+                whitePawns[Square.squareAt(i).getFile().ordinal()]++;
+
                 //Pawn shield
                 if (isKingSquare(board, i) == 1)
                     atkDefScoreWhite += 20;
@@ -328,6 +349,9 @@ public class Evaluation {
             if (p==Piece.WHITE_KNIGHT) {
                 mgScoreWhite += mgKnight + knightTable[i];
                 egScoreWhite += egKnight + knightTable[i];
+
+                imbalanceMG += mgKnight;
+                imbalanceEG += egKnight;
 
                 whiteMat += 3;
 
@@ -340,6 +364,11 @@ public class Evaluation {
             if (p==Piece.WHITE_BISHOP) {
                 mgScoreWhite += mgBishop + bishopTableWhite[i];
                 egScoreWhite += egBishop + bishopTableWhite[i];
+
+                imbalanceMG += mgBishop;
+                imbalanceEG += egBishop;
+
+                whiteBishops++;
 
                 whiteMat += 3;
 
@@ -354,6 +383,9 @@ public class Evaluation {
                 mgScoreWhite += mgRook + rookTableWhite[i];
                 egScoreWhite += egRook + rookTableWhite[i];
 
+                imbalanceMG += mgRook;
+                imbalanceEG += egRook;
+
                 whiteMat += 5;
 
                 continue;
@@ -362,6 +394,9 @@ public class Evaluation {
             if (p==Piece.WHITE_QUEEN) {
                 mgScoreWhite += mgQueen + queenTable[i];
                 egScoreWhite += egQueen + queenTable[i];
+
+                imbalanceMG += mgQueen;
+                imbalanceEG += egQueen;
 
                 whiteMat += 9;
 
@@ -379,6 +414,11 @@ public class Evaluation {
                 mgScoreBlack += mgPawn + mgPawnTableBlack[i];
                 egScoreBlack += egPawn + egPawnTableBlack[i];
 
+                imbalanceMG -= mgPawn;
+                imbalanceEG -= egPawn;
+
+                blackPawns[Square.squareAt(i).getFile().ordinal()]++;
+
                 //Pawn shield
                 if (isKingSquare(board, i) == -1)
                     atkDefScoreBlack += 20;
@@ -389,6 +429,9 @@ public class Evaluation {
             if (p==Piece.BLACK_KNIGHT) {
                 mgScoreBlack += mgKnight + knightTable[i];
                 egScoreBlack += egKnight + knightTable[i];
+
+                imbalanceMG -= mgKnight;
+                imbalanceEG -= egKnight;
 
                 blackMat += 3;
 
@@ -403,6 +446,11 @@ public class Evaluation {
                 mgScoreBlack += mgBishop + bishopTableBlack[i];
                 egScoreBlack += egBishop + bishopTableBlack[i];
 
+                imbalanceMG -= mgBishop;
+                imbalanceEG -= egBishop;
+
+                blackBishops++;
+
                 blackMat += 3;
 
                 if (Square.squareAt(i).getRank() == Rank.RANK_8)
@@ -416,6 +464,9 @@ public class Evaluation {
                 mgScoreBlack += mgRook + rookTableBlack[i];
                 egScoreBlack += egRook + rookTableBlack[i];
 
+                imbalanceMG -= mgRook;
+                imbalanceEG -= egRook;
+
                 blackMat += 5;
 
                 continue;
@@ -424,6 +475,9 @@ public class Evaluation {
             if (p==Piece.BLACK_QUEEN) {
                 mgScoreBlack += mgQueen + queenTable[i];
                 egScoreBlack += egQueen + queenTable[i];
+
+                imbalanceMG -= mgQueen;
+                imbalanceEG -= egQueen;
 
                 blackMat += 9;
 
@@ -441,12 +495,76 @@ public class Evaluation {
 
         float whiteMgPercentage =  Math.max(0,((whiteMat - 10) / 21));
         float blackMgPercentage =  Math.max(0,((blackMat - 10) / 21));
+        float phase = (whiteMgPercentage + blackMgPercentage) / 2;
 
+        //Piece value and piece square
         score -= (int) ((whiteMgPercentage * mgScoreBlack) + ((1 - whiteMgPercentage) * egScoreBlack));
         score += (int) ((blackMgPercentage * mgScoreWhite) + ((1 - blackMgPercentage) * egScoreWhite));
 
+        //Attack and defense score
         score += (int) (atkDefScoreWhite * blackMgPercentage);
         score -= (int) (atkDefScoreBlack * whiteMgPercentage);
+
+        //Imbalance
+        score += imbalanceMG * phase / 8;
+        score += imbalanceEG * (1-phase) / 8;
+
+        //Bishop pairs
+        if (whiteBishops == 2)
+            score += 32 * phase + 47 * (1-phase);
+
+        if (blackBishops == 2)
+            score -= 32 * phase + 47 * (1-phase);
+
+        //Pawn structure
+        int connectedPassedWhite = 0;
+        int connectedPassedBlack = 0;
+
+        for (int file = 0; file < 8; file++) {
+
+            //Passed pawn
+            if (whitePawns[file] > 0 && blackPawns[file] == 0) {
+                score += 50;
+                connectedPassedWhite++;
+
+                //Connected passed pawns
+                if (connectedPassedWhite > 1)
+                    score -= 100;
+
+            }
+            else
+                connectedPassedWhite = 0;
+
+            if (blackPawns[file] > 0 && whitePawns[file] == 0) {
+                score -= 50;
+                connectedPassedBlack++;
+
+                //Connected passed pawns
+                if (connectedPassedBlack > 1)
+                    score -= 100;
+
+            }
+            else
+                connectedPassedBlack = 0;
+
+            //Doubled pawns
+            if (blackPawns[file] > 1)
+                score += (11 * blackPawns[file]) * phase + (17 * blackPawns[file]) * (1-phase);
+
+            if (whitePawns[file] > 1)
+                score -= 11 * whitePawns[file] * phase + (17 * whitePawns[file]) * (1-phase);
+
+            //Isolated pawns
+            if (file > 1 && file < 7) {
+                if (whitePawns[file] > 0 && whitePawns[file-1] == 0 && whitePawns[file+1] == 0) {
+                    score -= 9 * phase + 20 * (1-phase);
+                }
+                if (blackPawns[file] > 0 && blackPawns[file-1] == 0 && blackPawns[file+1] == 0) {
+                    score += 9 * phase + 20 * (1-phase);
+                }
+            }
+
+        }
 
 
         if (board.getSideToMove() == Side.BLACK)

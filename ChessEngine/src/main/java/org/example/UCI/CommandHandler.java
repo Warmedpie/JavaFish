@@ -100,7 +100,6 @@ public class CommandHandler {
                         if (arguments.length > i + 1) {
                             if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
                                 for (int q = i + 2; q < arguments.length; q++) {
-                                    System.out.println(arguments[q]);
                                     board.doMove(arguments[q]);
                                 }
                             }
