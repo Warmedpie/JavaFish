@@ -12,7 +12,7 @@ import java.util.*;
 public class Search {
 
     Evaluation evaluation = new Evaluation();
-    Board board = new Board();
+    static Board board = new Board();
     TranspositionTable TT = new TranspositionTable();
 
 
@@ -625,18 +625,18 @@ public class Search {
     }
 
     long startTime;
-    int time = 0;
+    public static int time = 0;
 
-    public void setup(Board b, int time) {
-        this.time = time;
-        this.board = b;
+    public void setup(Board b, int t) {
+        time = t;
+        board = b;
 
         startTime = System.nanoTime();
 
     }
 
-    public void configureStats(int time) {
-        this.time = time;
+    public void configureStats(int t) {
+        time = t;
         this.TBhits = 0;
         nodes = 0;
         TT.clear();

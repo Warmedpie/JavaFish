@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ThreadEngine extends Thread {
+public class ThreadEngine implements Runnable {
     Board b = new Board();
     int depth = 0;
     int moveTime = 0;
@@ -54,7 +54,7 @@ public class ThreadEngine extends Thread {
 
                     score = s.PVSIgnore(-9999999, 9999999, i, 0, ignore);
 
-                    if (score == -312312 || score == 312312)
+                    if (score == -312312 || score == 312312 || Search.time == 0)
                         break;
 
                     pv = s.getPV(pvL);

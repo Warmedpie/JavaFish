@@ -7,6 +7,8 @@ import org.example.Engine.Search;
 
 import java.io.PrintWriter;
 
+import static java.lang.Thread.sleep;
+
 public class CommandHandler {
     boolean UCI = false;
     boolean debug = false;
@@ -15,8 +17,6 @@ public class CommandHandler {
     Board board = new Board();
 
     int multiPv = 1;
-
-    ThreadEngine engine = new ThreadEngine();
 
     public void parse(String command) {
         String[] arguments = command.split("\\s+");
@@ -160,22 +160,21 @@ public class CommandHandler {
                     depth = 99;
                 }
 
-                engine = new ThreadEngine();
+                ThreadEngine engine = new ThreadEngine();
 
                 if (smartTime > 0 && moveTime == 999999999) {
                     moveTime = smartTime;
                 }
 
-
                 engine.init(board, depth, moveTime, multiPv);
-                engine.start();
+                engine.run();
 
                 break;
 
             }
 
             if (argument.equalsIgnoreCase("STOP")) {
-                engine.stopThink();
+                Search.time = 0;
             }
 
             if (argument.equalsIgnoreCase("QUIT")) {
