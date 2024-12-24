@@ -17,13 +17,27 @@ public class Book {
             while (myReader.hasNextLine()) {
                 String line = myReader.nextLine();
 
-                String[] data = line.split("_");
-                if (!truncate(data[0], " ").isEmpty() && !truncate(data[1], " ").isEmpty()) {
-                    String fen1 = truncate(data[0], " ");
-                    if (!book.containsKey(fen1))
-                        book.put(fen1, new ArrayList<>());
+                String[] data = line.split(" ");
 
-                    book.get(fen1).add(truncate(data[1], " "));
+                Board b = new Board();
+                if (book.containsKey(b.getFen())) {
+                    book.get(b.getFen()).add(data[0]);
+                }
+                else {
+                    book.put(b.getFen(), new ArrayList<>());
+                    book.get(b.getFen()).add(data[0]);
+                }
+                for (int i = 0; i < data.length - 1; i++) {
+                    b.doMove(data[i]);
+
+                    if (book.containsKey(b.getFen())) {
+                        book.get(b.getFen()).add(data[i + 1]);
+                    }
+                    else {
+                        book.put(b.getFen(), new ArrayList<>());
+                        book.get(b.getFen()).add(data[i + 1]);
+                    }
+
                 }
 
             }
@@ -42,39 +56,6 @@ public class Book {
         }
 
         return "";
-    }
-
-    public static String truncate(String str, String delim) {
-        int idx = str.indexOf(delim);
-
-        if (idx == -1)
-            return "";
-
-        return str.substring(0, idx);
-    }
-
-    public Move getOpening(Board b) {
-        String fen = truncate(b.getFen(), " ");
-        String fenAfterMove = checkBook(fen);
-
-
-        return openMoveFromFen(b, fenAfterMove);
-    }
-
-    public Move openMoveFromFen(Board b, String fen) {
-        for (Move m : b.legalMoves()) {
-            b.doMove(m);
-
-            if (truncate(b.getFen(), " ").equals(fen)) {
-                b.undoMove();
-                return m;
-
-            }
-
-            b.undoMove();
-        }
-
-        return null;
     }
 
 }

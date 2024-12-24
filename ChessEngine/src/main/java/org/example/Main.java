@@ -10,42 +10,23 @@ import org.example.UCI.CommandHandler;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.*;
+
+import static java.lang.Thread.sleep;
 
 public class Main {
     public static void main(String[] args) {
 
-        boolean UCI = true;
-
-        Board b = new Board();
-        Search search = new Search();
-        Evaluation e = new Evaluation();
-
         Scanner scanner = new Scanner(System.in);
-
-        int depthToSearch = 0;
-        int timeToSearch = 0;
-        boolean playResult = false;
-        boolean useBook = true;
 
         CommandHandler uci = new CommandHandler();
 
-        while(true) {
+        while (true) {
+
             String command = scanner.nextLine();
-            String[] arguments = command.split("\\s+");
 
-            for (String argument : arguments) {
-                if (argument.equalsIgnoreCase("UCI")) {
-                    UCI = true;
-                    break;
-                }
-            }
-
-            if (UCI) {
-                uci.parse(command);
-            }
-
-
+            uci.parse(command);
         }
 
     }

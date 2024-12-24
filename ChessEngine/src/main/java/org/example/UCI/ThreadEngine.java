@@ -7,6 +7,7 @@ import org.example.Engine.Search;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ThreadEngine extends Thread {
     Board b = new Board();
@@ -35,14 +36,14 @@ public class ThreadEngine extends Thread {
         int legalMoves = b.legalMoves().size();
 
         //Check the opening book
-        Move openingMove = openingBook.getOpening(b);
-        if (openingMove != null) {
+        String openingMove = openingBook.checkBook(b.getFen());
+        if (!Objects.equals(openingMove, "")) {
             System.out.println("bestmove " + openingMove);
             return;
         }
 
         List<Move> pv = new ArrayList<>();
-        Move best = null;
+        Move best = b.legalMoves().get(0);
             for (int i = 3; i <= depth; i++) {
 
                 List<Move> ignore = new ArrayList<>();

@@ -2,7 +2,10 @@ package org.example.UCI;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Side;
+import com.github.bhlangonijr.chesslib.move.Move;
 import org.example.Engine.Search;
+
+import java.io.PrintWriter;
 
 public class CommandHandler {
     boolean UCI = false;
@@ -16,7 +19,6 @@ public class CommandHandler {
     ThreadEngine engine = new ThreadEngine();
 
     public void parse(String command) {
-
         String[] arguments = command.split("\\s+");
 
         int i = 0;
@@ -36,8 +38,7 @@ public class CommandHandler {
                 if (arguments[i + 1].equalsIgnoreCase("on")) {
                     debug = true;
                     i++;
-                }
-                else if (arguments[i + 1].equalsIgnoreCase("off")) {
+                } else if (arguments[i + 1].equalsIgnoreCase("off")) {
                     debug = false;
                     i++;
                 }
@@ -56,7 +57,7 @@ public class CommandHandler {
                     if (arguments[i + 1].equalsIgnoreCase("name")) {
                         if (arguments.length > i + 4) {
                             if (arguments[i + 2].equalsIgnoreCase("MultiPV") && arguments[i + 3].equalsIgnoreCase("value")) {
-                                multiPv = Math.min(Integer.parseInt(arguments[i + 4]),5);
+                                multiPv = Math.min(Integer.parseInt(arguments[i + 4]), 5);
 
                                 if (multiPv < 1)
                                     multiPv = 1;
@@ -64,6 +65,7 @@ public class CommandHandler {
                         }
                     }
                 }
+
                 continue;
             }
 
@@ -86,20 +88,18 @@ public class CommandHandler {
                         board.loadFromFen(arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i] + " " + arguments[++i]);
 
                         if (arguments.length > i + 1) {
-                            if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
-                                for (int q = i + 2; q < arguments.length; q++) {
-                                    System.out.println(arguments[q]);
+                            if (arguments[++i].equalsIgnoreCase("MOVES")) {
+                                for (int q = ++i; q < arguments.length; q++) {
                                     board.doMove(arguments[q]);
                                 }
                             }
                         }
-                    }
-                    else if (arguments[i + 1].equalsIgnoreCase("STARTPOS")) {
+                    } else if (arguments[i + 1].equalsIgnoreCase("STARTPOS")) {
                         board = new Board();
                         i += 1;
                         if (arguments.length > i + 1) {
-                            if (arguments[i + 1].equalsIgnoreCase("MOVES")) {
-                                for (int q = i + 2; q < arguments.length; q++) {
+                            if (arguments[++i].equalsIgnoreCase("MOVES")) {
+                                for (int q = ++i; q < arguments.length; q++) {
                                     board.doMove(arguments[q]);
                                 }
                             }
@@ -120,65 +120,44 @@ public class CommandHandler {
 
                 i++;
 
-                while (i < arguments.length) {
-
-                    if (arguments[i].equalsIgnoreCase("DEPTH")) {
-                        i++;
-                        depth = Integer.parseInt(arguments[i++]);
-
-                        continue;
-                    }
-
-                    if (arguments[i].equalsIgnoreCase("MOVETIME")) {
-                        i++;
-                        moveTime = Integer.parseInt(arguments[i++]);
-
-                        continue;
-                    }
-                    if (arguments[i].equalsIgnoreCase("INFINITE") || arguments[i].equalsIgnoreCase("PONDER")) {
-                        depth = 99;
-                        moveTime = 999999999;
-
-                        break;
-                    }
-                    if (arguments[i].equalsIgnoreCase("MATE")) {
-                        mateOnly = true;
-                        i++;
-                        depth = Integer.parseInt(arguments[i++]);
-
-                        continue;
-                    }
-                    if (arguments[i].equalsIgnoreCase("wtime")) {
-                        i++;
-                        if (board.getSideToMove() == Side.WHITE)
-                            smartTime += Integer.parseInt(arguments[i++])/60;
-                        else i++;
-
-                        continue;
-                    }
-                    if (arguments[i].equalsIgnoreCase("btime")) {
-                        i++;
-                        if (board.getSideToMove() == Side.BLACK)
-                            smartTime += Integer.parseInt(arguments[i++])/60;
-                        else i++;
-
-                        continue;
-                    }
-                    if (arguments[i].equalsIgnoreCase("winc")) {
-                        i++;
-                        smartTime += Integer.parseInt(arguments[i++]);
-
-                        continue;
-                    }
-                    if (arguments[i].equalsIgnoreCase("binc")) {
-                        i++;
-                        smartTime += Integer.parseInt(arguments[i++]);
-
-                        continue;
-                    }
-
-
+                if (arguments[i].equalsIgnoreCase("DEPTH")) {
                     i++;
+                    depth = Integer.parseInt(arguments[i]);
+                }
+
+                else if (arguments[i].equalsIgnoreCase("MOVETIME")) {
+                    i++;
+                    moveTime = Integer.parseInt(arguments[i]);
+                }
+                else if (arguments[i].equalsIgnoreCase("INFINITE") || arguments[i].equalsIgnoreCase("PONDER")) {
+
+                }
+                else if (arguments[i].equalsIgnoreCase("MATE")) {
+                    mateOnly = true;
+                    i++;
+                    depth = Integer.parseInt(arguments[i]);
+                }
+                else if (arguments[i].equalsIgnoreCase("wtime")) {
+                    i++;
+                    if (board.getSideToMove() == Side.WHITE)
+                        smartTime += Integer.parseInt(arguments[i]) / 60;
+                }
+                else if (arguments[i].equalsIgnoreCase("btime")) {
+                    i++;
+                    if (board.getSideToMove() == Side.BLACK)
+                        smartTime += Integer.parseInt(arguments[i]) / 60;
+                }
+                else if (arguments[i].equalsIgnoreCase("winc")) {
+                    i++;
+                    smartTime += Integer.parseInt(arguments[i]);
+                }
+                else if (arguments[i].equalsIgnoreCase("binc")) {
+                    i++;
+                    smartTime += Integer.parseInt(arguments[i]);
+                }
+                else {
+                    moveTime = 5000;
+                    depth = 99;
                 }
 
                 engine = new ThreadEngine();
@@ -187,7 +166,8 @@ public class CommandHandler {
                     moveTime = smartTime;
                 }
 
-                engine.init(board,depth,moveTime, multiPv);
+
+                engine.init(board, depth, moveTime, multiPv);
                 engine.start();
 
                 break;
@@ -204,7 +184,6 @@ public class CommandHandler {
 
             i++;
         }
-
     }
 
 }
