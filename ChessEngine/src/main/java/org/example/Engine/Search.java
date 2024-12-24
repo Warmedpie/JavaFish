@@ -469,6 +469,17 @@ public class Search {
                     score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
 
 
+                    if (multipv[0] != null && move == multipv[0].move)
+                        score += 4000;
+                    if (multipv[1] != null && move == multipv[1].move)
+                        score += 3900;
+                    if (multipv[2] != null && move == multipv[2].move)
+                        score += 3800;
+                    if (multipv[3] != null && move == multipv[3].move)
+                        score += 3700;
+                    if (multipv[4] != null && move == multipv[4].move)
+                        score += 3600;
+
                     if (move.hashCode() == killerMove[depth])
                         score += 3200;
 
