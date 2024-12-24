@@ -704,7 +704,7 @@ public class Search {
         long endTime = System.nanoTime();
         long duration = Math.max(1,(endTime - startTime));
 
-        return 1000 * (int) (getNodes() / (duration / 1000000));
+        return 1000 * (int) (getNodes() / (((duration + 1) / 1000000)+1));
     }
 
     public int getTime() {

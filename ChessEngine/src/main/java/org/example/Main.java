@@ -26,6 +26,7 @@ public class Main {
 
             String command = scanner.nextLine();
 
+
             uci.parse(command);
         }
 

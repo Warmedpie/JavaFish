@@ -1,5 +1,0 @@
-go depth 12
-position startpos e2e4
-
-position startpos moves e2e4
-go depth 12
