@@ -264,6 +264,15 @@ public class Evaluation {
         return 0;
     }
 
+    public boolean onlyPawns(Board board) {
+        for (Piece p : board.boardToArray()) {
+            if (p != Piece.NONE && p != Piece.WHITE_PAWN && p != Piece.BLACK_PAWN && p != Piece.WHITE_KING && p != Piece.BLACK_KING)
+                return false;
+        }
+
+        return true;
+    }
+
     public int evaluate(Board board) {
         int score = 0;
         float whiteMat = 0;
@@ -277,22 +286,14 @@ public class Evaluation {
         int atkDefScoreWhite = 0;
         int atkDefScoreBlack = 0;
 
-        int imbalanceMG = 0;
-        int imbalanceEG = 0;
         int whiteBishops = 0;
         int blackBishops = 0;
-
-        int[] whitePawnFiles = new int[]{0,0,0,0,0,0,0,0};
-        int[] blackPawnFiles = new int[]{0,0,0,0,0,0,0,0};
-
-        int[] whitePawnRanks = new int[]{0,0,0,0,0,0,0,0};
-        int[] blackPawnRanks = new int[]{0,0,0,0,0,0,0,0};
 
         int whiteKing = 65;
         int blackKing = 65;
 
-        List<Integer> whiteRooks = new ArrayList<>();
-        List<Integer> blackRooks = new ArrayList<>();
+        boolean whitePawn = false;
+        boolean blackPawn = false;
 
         int i = -1;
         for (Piece p : board.boardToArray()) {
@@ -361,11 +362,7 @@ public class Evaluation {
                 mgScoreWhite += mgPawn + mgPawnTableWhite[i];
                 egScoreWhite += egPawn + egPawnTableWhite[i];
 
-                imbalanceMG += mgPawn;
-                imbalanceEG += egPawn;
-
-                whitePawnFiles[Square.squareAt(i).getFile().ordinal()]++;
-                whitePawnRanks[Square.squareAt(i).getFile().ordinal()] = Square.squareAt(i).getRank().ordinal();
+                whitePawn = true;
 
                 //Pawn shield
                 if (isKingSquare(board, i) == 1)
@@ -378,9 +375,6 @@ public class Evaluation {
                 mgScoreWhite += mgKnight + knightTable[i];
                 egScoreWhite += egKnight + knightTable[i];
 
-                imbalanceMG += mgKnight;
-                imbalanceEG += egKnight;
-
                 whiteMat += 3;
 
                 if (Square.squareAt(i).getRank() == Rank.RANK_1)
@@ -392,9 +386,6 @@ public class Evaluation {
             if (p==Piece.WHITE_BISHOP) {
                 mgScoreWhite += mgBishop + bishopTableWhite[i];
                 egScoreWhite += egBishop + bishopTableWhite[i];
-
-                imbalanceMG += mgBishop;
-                imbalanceEG += egBishop;
 
                 whiteBishops++;
 
@@ -411,11 +402,6 @@ public class Evaluation {
                 mgScoreWhite += mgRook + rookTableWhite[i];
                 egScoreWhite += egRook + rookTableWhite[i];
 
-                imbalanceMG += mgRook;
-                imbalanceEG += egRook;
-
-                whiteRooks.add(i);
-
                 whiteMat += 5;
 
                 continue;
@@ -424,9 +410,6 @@ public class Evaluation {
             if (p==Piece.WHITE_QUEEN) {
                 mgScoreWhite += mgQueen + queenTable[i];
                 egScoreWhite += egQueen + queenTable[i];
-
-                imbalanceMG += mgQueen;
-                imbalanceEG += egQueen;
 
                 whiteMat += 9;
 
@@ -446,11 +429,7 @@ public class Evaluation {
                 mgScoreBlack += mgPawn + mgPawnTableBlack[i];
                 egScoreBlack += egPawn + egPawnTableBlack[i];
 
-                imbalanceMG -= mgPawn;
-                imbalanceEG -= egPawn;
-
-                blackPawnFiles[Square.squareAt(i).getFile().ordinal()]++;
-                blackPawnRanks[Square.squareAt(i).getFile().ordinal()] = Square.squareAt(i).getRank().ordinal();
+                blackPawn = true;
 
                 //Pawn shield
                 if (isKingSquare(board, i) == -1)
@@ -462,9 +441,6 @@ public class Evaluation {
             if (p==Piece.BLACK_KNIGHT) {
                 mgScoreBlack += mgKnight + knightTable[i];
                 egScoreBlack += egKnight + knightTable[i];
-
-                imbalanceMG -= mgKnight;
-                imbalanceEG -= egKnight;
 
                 blackMat += 3;
 
@@ -478,9 +454,6 @@ public class Evaluation {
 
                 mgScoreBlack += mgBishop + bishopTableBlack[i];
                 egScoreBlack += egBishop + bishopTableBlack[i];
-
-                imbalanceMG -= mgBishop;
-                imbalanceEG -= egBishop;
 
                 blackBishops++;
 
@@ -497,12 +470,7 @@ public class Evaluation {
                 mgScoreBlack += mgRook + rookTableBlack[i];
                 egScoreBlack += egRook + rookTableBlack[i];
 
-                imbalanceMG -= mgRook;
-                imbalanceEG -= egRook;
-
                 blackMat += 5;
-
-                blackRooks.add(i);
 
                 continue;
             }
@@ -510,9 +478,6 @@ public class Evaluation {
             if (p==Piece.BLACK_QUEEN) {
                 mgScoreBlack += mgQueen + queenTable[i];
                 egScoreBlack += egQueen + queenTable[i];
-
-                imbalanceMG -= mgQueen;
-                imbalanceEG -= egQueen;
 
                 blackMat += 9;
 
@@ -542,92 +507,16 @@ public class Evaluation {
         score += (int) (atkDefScoreWhite * blackMgPercentage);
         score -= (int) (atkDefScoreBlack * whiteMgPercentage);
 
-        //Imbalance
-        score += (int)(imbalanceMG * phase / 4);
-        score += (int)(imbalanceEG * (1-phase) / 4);
-
         //Bishop pairs
         if (whiteBishops == 2)
-            score += (int)(32 * phase + 47 * (1-phase));
+            score += (int)(10 * phase + 17 * (1-phase));
 
         if (blackBishops == 2)
-            score -= (int)(32 * phase + 47 * (1-phase));
+            score -= (int)(10 * phase + 17 * (1-phase));
 
-        //Pawn structure
-        int connectedPassedWhite = 0;
-        int connectedPassedBlack = 0;
-
-        for (int file = 0; file < 8; file++) {
-
-            //Passed pawn
-            if (whitePawnFiles[file] > 0 && blackPawnFiles[file] == 0) {
-                score += (int)(25 * (1-phase));
-                connectedPassedWhite++;
-
-                //Connected passed pawns
-                if (connectedPassedWhite > 1)
-                    score += (int)(25 * (1-phase));
-
-            }
-            else
-                connectedPassedWhite = 0;
-
-            if (blackPawnFiles[file] > 0 && whitePawnFiles[file] == 0) {
-                score -= (int)(25 * (1-phase));
-                connectedPassedBlack++;
-
-                //Connected passed pawns
-                if (connectedPassedBlack > 1)
-                    score -= (int)(25 * (1-phase));
-
-            }
-            else
-                connectedPassedBlack = 0;
-
-            //Doubled pawns
-            if (blackPawnFiles[file] > 1)
-                score += (int)((11 * blackPawnFiles[file]) * phase + (17 * blackPawnFiles[file]) * (1-phase));
-
-            if (whitePawnFiles[file] > 1)
-                score -= (int)(11 * whitePawnFiles[file] * phase + (17 * whitePawnFiles[file]) * (1-phase));
-
-            //Isolated pawns
-            if (file > 1 && file < 7) {
-                if (whitePawnFiles[file] > 0 && whitePawnFiles[file-1] == 0 && whitePawnFiles[file+1] == 0) {
-                    score -= (int)(9 * phase + 20 * (1-phase));
-                }
-                if (blackPawnFiles[file] > 0 && blackPawnFiles[file-1] == 0 && blackPawnFiles[file+1] == 0) {
-                    score += (int)(9 * phase + 20 * (1-phase));
-                }
-            }
-
-            //rook behind pawn for endgames
-            if (whitePawnFiles[file] > 0 && blackPawnFiles[file] == 0 || blackPawnFiles[file] > 0 && whitePawnFiles[file] == 0) {
-                for (Integer square : whiteRooks) {
-                    Square sq = Square.squareAt(square);
-                    //Defend from behind
-                    if (whitePawnFiles[file] > 0 && sq.getFile().ordinal() == file && sq.getRank().ordinal() < whitePawnRanks[file])
-                        score += (int)(15 * (1 - phase));
-
-                    //Attack from behind
-                    if (blackPawnFiles[file] > 0 && sq.getFile().ordinal() == file && sq.getRank().ordinal() > blackPawnRanks[file])
-                        score += (int)(5 * (1 - phase));
-
-                }
-
-                for (Integer square : blackRooks) {
-                    Square sq = Square.squareAt(square);
-                    //Defend from behind
-                    if (blackPawnFiles[file] > 0 && sq.getFile().ordinal() == file && sq.getRank().ordinal() > blackPawnRanks[file])
-                        score -= (int)(15 * (1 - phase));
-
-                    //Attack from behind
-                    if (whitePawnFiles[file] > 0 && sq.getFile().ordinal() == file && sq.getRank().ordinal() < whitePawnRanks[file])
-                        score -= (int)(5 * (1 - phase));
-                }
-            }
-
-        }
+        //Returns draws
+        if (winnable(whiteMat, blackMat, blackPawn, whitePawn) == 0)
+            return 0;
 
         if (whiteMat < 4 && blackMat > 4) {
             score += mateTableKing[whiteKing];
@@ -670,6 +559,15 @@ public class Evaluation {
             return -1;
 
         return 0;
+    }
+
+    int winnable(float whiteMat, float blackMat, boolean blackPawn, boolean whitePawn) {
+        if (whiteMat < 5 && blackMat < 5 && !blackPawn && !whitePawn)
+            return 0;
+
+
+        return 1;
+
     }
 
 }

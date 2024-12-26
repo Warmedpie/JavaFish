@@ -35,12 +35,14 @@ public class CommandHandler {
             }
 
             if (argument.equalsIgnoreCase("DEBUG")) {
-                if (arguments[i + 1].equalsIgnoreCase("on")) {
-                    debug = true;
-                    i++;
-                } else if (arguments[i + 1].equalsIgnoreCase("off")) {
-                    debug = false;
-                    i++;
+                if (arguments.length > i + 1) {
+                    if (arguments[i + 1].equalsIgnoreCase("on")) {
+                        debug = true;
+                        i++;
+                    } else if (arguments[i + 1].equalsIgnoreCase("off")) {
+                        debug = false;
+                        i++;
+                    }
                 }
 
                 continue;
@@ -113,7 +115,7 @@ public class CommandHandler {
 
             if (argument.equalsIgnoreCase("GO")) {
 
-                int depth = 99;
+                int depth = 32;
                 int moveTime = 999999999;
                 int smartTime = 0;
                 boolean mateOnly = false;
@@ -149,7 +151,7 @@ public class CommandHandler {
                         smartTime += Integer.parseInt(arguments[i++]);
                     } else {
                         moveTime = 5000;
-                        depth = 99;
+                        depth = 32;
                         i++;
                     }
 
@@ -161,7 +163,7 @@ public class CommandHandler {
                     moveTime = smartTime;
                 }
 
-                engine.init(board, depth, moveTime, multiPv);
+                engine.init(board, depth, moveTime, multiPv, debug);
                 engine.run();
 
                 break;

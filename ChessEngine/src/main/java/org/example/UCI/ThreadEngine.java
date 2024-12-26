@@ -17,12 +17,15 @@ public class ThreadEngine implements Runnable {
     Search s = new Search();
     Book openingBook = new Book();
 
-    public void init(Board b, int depth, int moveTime, int mPv) {
+    boolean debug = false;
+
+    public void init(Board b, int depth, int moveTime, int mPv, boolean debug) {
         this.b = b;
         this.depth = depth;
         this.moveTime = moveTime;
         this.multiPv = mPv;
         this.s = new Search();
+        this.debug = debug;
     }
 
     public void stopThink() {
@@ -84,6 +87,8 @@ public class ThreadEngine implements Runnable {
                     }
 
                     System.out.println(info);
+                    if (debug)
+                        System.out.println("First move beta cuts: " + s.firstMoveCuts());
 
                 }
             }
