@@ -25,9 +25,8 @@ public class Main {
         while (true) {
 
             String command = scanner.nextLine();
-
-
             uci.parse(command);
+
         }
 
     }

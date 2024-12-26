@@ -2,8 +2,12 @@ package org.example.Engine;
 
 import com.github.bhlangonijr.chesslib.*;
 import com.github.bhlangonijr.chesslib.move.Move;
+import com.github.bhlangonijr.chesslib.move.MoveGenerator;
+import com.github.bhlangonijr.chesslib.move.MoveGeneratorException;
 
 import java.util.*;
+
+import static com.github.bhlangonijr.chesslib.move.MoveGenerator.*;
 
 public class Search {
 
@@ -67,16 +71,35 @@ public class Search {
         //Order Moves
         Move TableMove = null;
 
-        if (multipv[0] != null)
-            TableMove = multipv[0].move;
+        int mq = 0;
+        while (multipv[mq] == null || ignore.contains(multipv[mq].move)) {
+            mq++;
 
-        List<ScoredMove> orderedMoves = orderMoves(depth, TableMove);
-
-        int alphaOrig = alpha;
+            if (mq == 5)
+                break;
+        }
+        if (mq < 5 && multipv[mq] != null && !ignore.contains(multipv[mq].move)) {
+            TableMove = multipv[mq].move;
+        }
 
         Move bestMove = null;
+        int alphaOrig = alpha;
 
         int i = 0;
+        if (TableMove != null) {
+            i++;
+            board.doMove(TableMove);
+            int score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
+            board.undoMove();
+
+            if (score > alpha) {
+                alpha = score;
+                bestMove = TableMove;
+            }
+
+        }
+
+        List<ScoredMove> orderedMoves = orderAllMoves(depth, TableMove);
         boolean inCheck = board.isKingAttacked();
         for (ScoredMove scoredMove : orderedMoves) {
             Move move = scoredMove.move;
@@ -191,71 +214,90 @@ public class Search {
 
         Move TableMove = null;
 
-        if (node != null)
+        if (node != null) {
             TableMove = node.move;
+        }
 
-        //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth, TableMove);
-
+        int score;
+        Move bestMove = null;
         int alphaOrig = alpha;
 
-        Move bestMove = null;
-
         int i = 0;
-        for (ScoredMove scoredMove : orderedMoves) {
-            Move move = scoredMove.move;
 
-            boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
-
-            board.doMove(move);
-
-            int score;
-            //Late move reductions
-            //Do not reduce when in check
-            //do not reduce moves that are checks
-            int LMR = 0;
-            if (!inCheck && !board.isKingAttacked()) {
-                LMR = (int)(0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
-            }
-
-            //Search with the full window on first move
-            if (i == 0) {
-                score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
-            }
-            else {
-                //Search with a null window until alpha improves
-                score = -PVS(-alpha-1,-alpha,depth-1 - LMR, plyDeep + 1);
-
-                //re-search required
-                if (score > alpha && beta - alpha > 1) {
-                    score = -PVS(-beta,-alpha,depth-1, plyDeep + 1);
-                }
-
-            }
+        //Test the table move
+        if (TableMove != null) {
+            i++;
+            board.doMove(TableMove);
+            score = -PVS(-beta,-alpha,depth - 1, plyDeep + 1);
             board.undoMove();
 
             if (score > alpha) {
                 alpha = score;
-                bestMove = move;
-
-                MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth + i;
-
+                bestMove = TableMove;
             }
 
-            if (score >= beta) {
+        }
 
-                if (!capture) {
-                HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth*depth;
+        if (alpha < beta) {
 
-                if (killerMove[depth] == 0)
-                    killerMove[depth] = move.hashCode();
+            //Order Moves Non-Losing Captures
+            List<ScoredMove> orderedMoves = orderAllMoves(depth, TableMove);
+
+            for (ScoredMove scoredMove : orderedMoves) {
+                Move move = scoredMove.move;
+
+                boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+
+                board.doMove(move);
+
+                //Late move reductions
+                //Do not reduce when in check
+                //do not reduce moves that are checks
+                int LMR = 0;
+                if (!inCheck && !board.isKingAttacked()) {
+                    LMR = (int) (0.7844 + Math.log(depth) * Math.log(i) / 2.4696);
                 }
 
-                break;
+                //Search with the full window on first move
+                if (i == 0) {
+                    score = -PVS(-beta, -alpha, depth - 1, plyDeep + 1);
+                } else {
+                    //Search with a null window until alpha improves
+                    score = -PVS(-alpha - 1, -alpha, depth - 1 - LMR, plyDeep + 1);
 
+                    //re-search required
+                    if (score > alpha && beta - alpha > 1) {
+                        score = -PVS(-beta, -alpha, depth - 1, plyDeep + 1);
+                    }
+
+                }
+                board.undoMove();
+
+                if (score > alpha) {
+                    alpha = score;
+                    bestMove = move;
+
+                    MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()] += depth + i;
+
+                }
+
+                if (score >= beta) {
+
+                    if (!capture) {
+                        HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth * depth;
+
+                        if (killerMove[depth] == 0)
+                            killerMove[depth] = move.hashCode();
+                    }
+
+                    break;
+
+                }
+
+                i++;
             }
 
-            i++;
+
         }
 
         if (alpha >= beta) {
@@ -338,44 +380,86 @@ public class Search {
         }
 
         Move TableMove = null;
-
-        if (node != null)
+        if (node != null) {
             TableMove = node.move;
-
-        //Order Moves
-        List<ScoredMove> orderedMoves = orderMoves(depth, TableMove);
+        }
 
         Move bestMove = null;
         int alphaOrig = alpha;
 
-        for (ScoredMove scoredMove : orderedMoves) {
-            Move move = scoredMove.move;
-
-            boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
-
-            board.doMove(move);
-
+        if (TableMove != null) {
+            board.doMove(TableMove);
             int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
-
             board.undoMove();
 
             if (score > alpha) {
                 alpha = score;
-                bestMove = move;
+                bestMove = TableMove;
             }
+        }
 
-            //Fail-hard beta cut-off
-            if (score >= beta) {
+        //Captures
+        if (alpha < beta) {
+            //Order Moves
+            List<ScoredMove> orderedMoves = orderCaptures(TableMove);
 
-                if (!capture) {
-                    if (killerMove[depth] == 0)
-                        killerMove[depth] = move.hashCode();
+            for (ScoredMove scoredMove : orderedMoves) {
+                Move move = scoredMove.move;
+
+                board.doMove(move);
+
+                int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+
+                board.undoMove();
+
+                if (score > alpha) {
+                    alpha = score;
+                    bestMove = move;
+
+                    //Fail-hard beta cut-off
+                    if (alpha >= beta) {
+                        break;
+                    }
+
                 }
 
-                break;
+            }
+        }
+        //Quiet
+        if (alpha < beta) {
+            //Order Moves
+            List<ScoredMove> orderedMoves = orderQuiet(depth, TableMove);
+
+            for (ScoredMove scoredMove : orderedMoves) {
+                Move move = scoredMove.move;
+
+                boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+
+                board.doMove(move);
+
+                int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+
+                board.undoMove();
+
+                if (score > alpha) {
+                    alpha = score;
+                    bestMove = move;
+
+                    //Fail-hard beta cut-off
+                    if (alpha >= beta) {
+
+                        if (!capture) {
+                            if (killerMove[depth] == 0)
+                                killerMove[depth] = move.hashCode();
+                        }
+
+                        break;
+
+                    }
+
+                }
 
             }
-
         }
 
         insertTable(alpha, beta, alphaOrig, depth, bestMove);
@@ -456,104 +540,6 @@ public class Search {
         return alpha;
     }
 
-    public List<ScoredMove> orderMoves(int depth, Move best) {
-
-        //Get Legal Moves
-        List<Move> legalMoves = board.legalMoves();
-
-        //Return this list
-        List<ScoredMove> moves = new ArrayList<>();
-
-        //Try all moves
-        for (Move move : legalMoves) {
-            int score;
-
-            //Table PV move gets higher rating
-            if (move != best) {
-
-                //Piece square table score
-                score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
-
-                //Captures
-                if (board.getPiece(move.getTo()) != Piece.NONE) {
-                    int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
-                    int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
-
-                    Side defender = Side.WHITE;
-
-                    if (board.getSideToMove() == Side.WHITE)
-                        defender = Side.BLACK;
-
-                    //Hanging piece
-                    if(board.squareAttackedBy(move.getTo(), defender) == 0)
-                        score += 10000 + to;
-                    //Better value capture
-                    else if (to > from) {
-                        score += 10000 + (to - from);
-                    }
-
-                    //Equal value capture
-                    else if (Math.abs(to - from) < 30) {
-                        score += 5000 + to - from;
-                    }
-
-                    else
-                        score += -2000 + (to - from);
-
-                }
-                else {
-
-                    score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
-                    score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
-
-                    if (multipv[0] != null && move == multipv[0].move)
-                        score += 4000;
-                    if (multipv[1] != null && move == multipv[1].move)
-                        score += 3900;
-                    if (multipv[2] != null && move == multipv[2].move)
-                        score += 3800;
-                    if (multipv[3] != null && move == multipv[3].move)
-                        score += 3700;
-                    if (multipv[4] != null && move == multipv[4].move)
-                        score += 3600;
-
-                    if (move.hashCode() == killerMove[depth])
-                        score += 3200;
-
-                    else if (move.hashCode() == killerMove[depth + 1]) {
-                        score += 3100;
-                    }
-
-                    else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
-                        score += 3095;
-                    }
-                }
-
-            }
-            else {
-                score = 9999999;
-            }
-
-            Move lastMove = getLastMove();
-            if (lastMove != null) {
-                if (lastMove.getFrom().ordinal() < 64 && lastMove.getTo().ordinal() < 64)
-                    if (counterMove[lastMove.getFrom().ordinal()][lastMove.getTo().ordinal()] == move)
-                        score += 10000;
-            }
-
-            ScoredMove m = new ScoredMove(move, score);
-            moves.add(m);
-
-        }
-
-        if (moves.size() > 1) {
-            Collections.sort(moves);
-        }
-
-        return moves;
-
-    }
-
     public List<ScoredMove> orderCapturesAndChecks() {
 
         //Get Legal Moves
@@ -613,6 +599,233 @@ public class Search {
                 ScoredMove m = new ScoredMove(move, score);
                 moves.add(m);
             }
+        }
+
+        if (moves.size() > 1) {
+            Collections.sort(moves);
+        }
+
+        return moves;
+
+    }
+
+
+    //Table Move [X]
+    //Counter Move
+    public List<ScoredMove> orderAllMoves(int depth, Move best) {
+
+        //Get Legal Moves
+        List<Move> legalMoves = board.legalMoves();
+
+        //Return this list
+        List<ScoredMove> moves = new ArrayList<>();
+
+        //Try all moves
+        for (Move move : legalMoves) {
+            int score;
+
+            //Table PV move already tested
+            if (move == best)
+                continue;
+
+            Move lastMove = getLastMove();
+            if (lastMove != null) {
+                if (lastMove.getFrom().ordinal() < 64 && lastMove.getTo().ordinal() < 64)
+                    if (counterMove[lastMove.getFrom().ordinal()][lastMove.getTo().ordinal()] == move) {
+                        score = 999999;
+                        ScoredMove m = new ScoredMove(move, score);
+                        moves.add(m);
+
+                        continue;
+                    }
+            }
+
+            //Piece square table score
+            score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
+
+            //Captures
+            if (board.getPiece(move.getTo()) != Piece.NONE) {
+                int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
+                int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
+
+                Side defender = Side.WHITE;
+
+                if (board.getSideToMove() == Side.WHITE)
+                    defender = Side.BLACK;
+
+                //Hanging piece
+                if(board.squareAttackedBy(move.getTo(), defender) == 0)
+                    score += 20000 + to;
+                    //Better value capture
+                else if (to > from) {
+                    score += 20000 + (to - from);
+                }
+
+                //Equal value capture
+                else if (Math.abs(to - from) < 30) {
+                    score += 5000 + to - from;
+                }
+
+                else
+                    score += -2000 + (to - from);
+
+            }
+            else {
+
+                score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
+                score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
+
+                if (multipv[0] != null && move == multipv[0].move)
+                    score += 7000;
+                if (multipv[1] != null && move == multipv[1].move)
+                    score += 6900;
+                if (multipv[2] != null && move == multipv[2].move)
+                    score += 6800;
+                if (multipv[3] != null && move == multipv[3].move)
+                    score += 6700;
+                if (multipv[4] != null && move == multipv[4].move)
+                    score += 6600;
+
+                if (move.hashCode() == killerMove[depth])
+                    score += 3200;
+
+                else if (move.hashCode() == killerMove[depth + 1]) {
+                    score += 3100;
+                }
+
+                else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
+                    score += 3095;
+                }
+            }
+
+            ScoredMove m = new ScoredMove(move, score);
+            moves.add(m);
+
+        }
+
+        if (moves.size() > 1) {
+            Collections.sort(moves);
+        }
+
+        return moves;
+
+    }
+
+    public List<ScoredMove> orderCaptures(Move best) {
+
+        //Get Legal Moves
+        List<Move> legalMoves = generateCaptures();
+
+        //Return this list
+        List<ScoredMove> moves = new ArrayList<>();
+
+        //Try all moves
+        for (Move move : legalMoves) {
+            int score;
+
+            //Table PV move already tested
+            if (move == best)
+                continue;
+
+            //Piece square table score
+            score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
+
+            int to = orderValueScore.get(board.getPiece(move.getTo()).ordinal());
+            int from = orderValueScore.get(board.getPiece(move.getFrom()).ordinal());
+
+            Side defender = Side.WHITE;
+
+            if (board.getSideToMove() == Side.WHITE)
+                defender = Side.BLACK;
+
+            //Hanging piece
+            if(board.squareAttackedBy(move.getTo(), defender) == 0)
+                score += 20000 + to;
+                //Better value capture
+            else if (to > from) {
+                score += 20000 + (to - from);
+            }
+
+            //Equal value capture
+            else if (Math.abs(to - from) < 30) {
+                score += 5000 + to - from;
+            }
+
+            else
+                score += (to - from);
+
+            ScoredMove m = new ScoredMove(move, score);
+            moves.add(m);
+
+        }
+
+
+        if (moves.size() > 1) {
+            Collections.sort(moves);
+        }
+
+        return moves;
+    }
+
+    public List<ScoredMove> orderQuiet(int depth, Move best) {
+
+        //Get Legal Moves
+        List<Move> legalMoves = generateQuiet();
+
+        //Return this list
+        List<ScoredMove> moves = new ArrayList<>();
+
+        //Try all moves
+        for (Move move : legalMoves) {
+            int score;
+
+            //Table PV move already tested
+            if (move == best)
+                continue;
+
+            Move lastMove = getLastMove();
+            if (lastMove != null) {
+                if (lastMove.getFrom().ordinal() < 64 && lastMove.getTo().ordinal() < 64)
+                    if (counterMove[lastMove.getFrom().ordinal()][lastMove.getTo().ordinal()] == move) {
+                        score = 999999;
+                        ScoredMove m = new ScoredMove(move, score);
+                        moves.add(m);
+
+                        continue;
+                    }
+            }
+
+            //Piece square table score
+            score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
+
+            score += HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()];
+            score += MiniHistory[move.getFrom().ordinal()][move.getTo().ordinal()];
+
+            if (multipv[0] != null && move == multipv[0].move)
+                score += 7000;
+            if (multipv[1] != null && move == multipv[1].move)
+                score += 6900;
+            if (multipv[2] != null && move == multipv[2].move)
+                score += 6800;
+            if (multipv[3] != null && move == multipv[3].move)
+                score += 6700;
+            if (multipv[4] != null && move == multipv[4].move)
+                score += 6600;
+
+            if (move.hashCode() == killerMove[depth])
+                score += 3200;
+
+            else if (move.hashCode() == killerMove[depth + 1]) {
+                score += 3100;
+            }
+
+            else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
+                score += 3095;
+            }
+
+            ScoredMove m = new ScoredMove(move, score);
+            moves.add(m);
+
         }
 
         if (moves.size() > 1) {
@@ -735,8 +948,7 @@ public class Search {
             if (TT.get(b.getZobristKey()).move == null)
                 break;
 
-            if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
-                toReturn.add(TT.get(b.getZobristKey()).move);
+            toReturn.add(TT.get(b.getZobristKey()).move);
 
             if (b.getPiece(TT.get(b.getZobristKey()).move.getFrom()) != Piece.NONE)
                 b.doMove(TT.get(b.getZobristKey()).move);
@@ -786,6 +998,50 @@ public class Search {
         }
 
         return null;
+    }
+
+    static List<Move> generatePseudoLegalQuiet() {
+        List<Move> moves = new LinkedList();
+
+        long quietBB = ~board.getBitboard(board.getSideToMove()) & ~board.getBitboard(board.getSideToMove().flip());
+
+        generatePawnMoves(board, moves);
+        generateKnightMoves(board, moves, quietBB);
+        generateBishopMoves(board, moves, quietBB);
+        generateRookMoves(board, moves, quietBB);
+        generateQueenMoves(board, moves, quietBB);
+        generateKingMoves(board, moves, quietBB);
+        generateCastleMoves(board, moves);
+
+        return moves;
+    }
+
+    List<Move> generateCaptures() {
+        try {
+            List<Move> moves = MoveGenerator.generatePseudoLegalCaptures(board);
+            moves.removeIf((move) -> {
+                return !board.isMoveLegal(move, false);
+            });
+            return moves;
+        } catch (Exception var2) {
+            Exception e = var2;
+            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
+        }
+
+    }
+
+    List<Move> generateQuiet() {
+        try {
+            List<Move> moves = generatePseudoLegalQuiet();
+            moves.removeIf((move) -> {
+                return !board.isMoveLegal(move, false);
+            });
+            return moves;
+        } catch (Exception var2) {
+            Exception e = var2;
+            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
+        }
+
     }
 
 }

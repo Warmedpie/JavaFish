@@ -75,12 +75,12 @@ public class ThreadEngine implements Runnable {
                         mateScore *= -1;
 
                     if (mateScore == 0) {
-                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score cp ").append(score).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
+                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score cp ").append(score).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" pv ");
                         for (Move m : pv) {
                             info.append(m.toString()).append(" ");
                         }
                     } else {
-                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score mate ").append(mateScore).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" hashfull 0").append(" pv ");
+                        info.append("info multipv ").append(pvL + 1).append(" depth " ).append(i).append(" seldepth ").append(pv.size()).append(" score mate ").append(mateScore).append(" time ").append(s.getTime()).append(" nodes ").append(s.getNodes()).append(" nps ").append(s.getnps()).append(" tbhits ").append(s.getTBhits()).append(" pv ");
                         for (Move m : pv) {
                             info.append(m.toString()).append(" ");
                         }
