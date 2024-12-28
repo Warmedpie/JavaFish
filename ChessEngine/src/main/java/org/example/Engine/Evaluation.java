@@ -295,65 +295,63 @@ public class Evaluation {
         boolean whitePawn = false;
         boolean blackPawn = false;
 
-        int i = -1;
-        for (Piece p : board.boardToArray()) {
-            i++;
+        for (int i = 0; i < 64; i++) {
+
+            Square sq = Square.squareAt(i);
+
+            Piece p = board.getPiece(sq);
 
             //Attackers and defenders
-            if (i < 64) {
-                if (isKingSquare(board, i) == 1) {
+            if (isKingSquare(board, i) == 1) {
 
-                    if (board.getPiece(Square.squareAt(i)) == Piece.WHITE_PAWN)
-                        atkDefScoreWhite += 27;
+                if (board.getPiece(sq) == Piece.WHITE_PAWN)
+                    atkDefScoreWhite += 27;
 
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
-                        atkDefScoreBlack += 81;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.BISHOP) != 0)
-                        atkDefScoreBlack += 52;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.QUEEN) != 0)
-                        atkDefScoreBlack += 30;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.ROOK) != 0)
-                        atkDefScoreBlack += 44;
+                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
+                    atkDefScoreBlack += 81;
+                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.BISHOP) != 0)
+                    atkDefScoreBlack += 52;
+                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.QUEEN) != 0)
+                    atkDefScoreBlack += 30;
+                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.ROOK) != 0)
+                    atkDefScoreBlack += 44;
 
-                    //Knight defender
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
-                        atkDefScoreWhite += 45;
-                }
-                if (isKingSquare(board, i) == -1) {
+                //Knight defender
+                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
+                    atkDefScoreWhite += 45;
+            }
+            if (isKingSquare(board, i) == -1) {
 
-                    if (board.getPiece(Square.squareAt(i)) == Piece.BLACK_PAWN)
-                        atkDefScoreBlack += 27;
+                if (board.getPiece(sq) == Piece.BLACK_PAWN)
+                    atkDefScoreBlack += 27;
 
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.KNIGHT) != 0)
-                        atkDefScoreWhite += 81;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.BISHOP) != 0)
-                        atkDefScoreWhite += 52;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.QUEEN) != 0)
-                        atkDefScoreWhite += 30;
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.WHITE, PieceType.ROOK) != 0)
-                        atkDefScoreWhite += 44;
+                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
+                    atkDefScoreWhite += 81;
+                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.BISHOP) != 0)
+                    atkDefScoreWhite += 52;
+                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.QUEEN) != 0)
+                    atkDefScoreWhite += 30;
+                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.ROOK) != 0)
+                    atkDefScoreWhite += 44;
 
-                    //Knight defender
-                    if (board.squareAttackedByPieceType(Square.squareAt(i), Side.BLACK, PieceType.KNIGHT) != 0)
-                        atkDefScoreBlack += 45;
+                //Knight defender
+                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
+                    atkDefScoreBlack += 45;
 
-                }
             }
             //Space
-            if (i < 64) {
-                if (board.getPiece(Square.squareAt(i - 8)) == Piece.WHITE_PAWN) {
-                    score += 2;
-                }
-                if (board.getPiece(Square.squareAt(i - 16)) == Piece.WHITE_PAWN) {
-                    score += 2;
-                }
+            if (board.getPiece(Square.squareAt(i - 8)) == Piece.WHITE_PAWN) {
+                score += 2;
+            }
+            if (board.getPiece(Square.squareAt(i - 16)) == Piece.WHITE_PAWN) {
+                score += 2;
+            }
 
-                if (board.getPiece(Square.squareAt(i + 8)) == Piece.BLACK_PAWN) {
-                    score -= 2;
-                }
-                if (board.getPiece(Square.squareAt(i + 16)) == Piece.BLACK_PAWN) {
-                    score -= 2;
-                }
+            if (board.getPiece(Square.squareAt(i + 8)) == Piece.BLACK_PAWN) {
+                score -= 2;
+            }
+            if (board.getPiece(Square.squareAt(i + 16)) == Piece.BLACK_PAWN) {
+                score -= 2;
             }
             if (p == Piece.NONE)
                 continue;

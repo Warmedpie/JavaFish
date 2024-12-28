@@ -24,7 +24,7 @@ public class Search {
     //Every time alpha is raised, raise this number
     int[][] MiniHistory = new int[64][64];
 
-    int[] killerMove = new int[64];
+    Move[] killerMove = new Move[64];
     Move[][] counterMove = new Move[64][64];
 
     int nodes = 0;
@@ -48,7 +48,7 @@ public class Search {
         orderValueScore.add(0);
 
         for (int p = 0; p < 64; p++) {
-            killerMove[p] = 0;
+            killerMove[p] = null;
             for (int s = 0; s < 64; s++) {
                 HistoryHeuristic[p][s] = 0;
                 MiniHistory[p][s] = 0;
@@ -79,7 +79,8 @@ public class Search {
                 break;
         }
         if (mq < 5 && multipv[mq] != null && !ignore.contains(multipv[mq].move)) {
-            TableMove = multipv[mq].move;
+            if (board.getPiece(multipv[mq].move.getFrom()) != Piece.NONE && board.isMoveLegal(multipv[mq].move, true))
+                TableMove = multipv[mq].move;
         }
 
         Move bestMove = null;
@@ -150,8 +151,8 @@ public class Search {
                 if (!capture) {
                     HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth*depth;
 
-                    if (killerMove[depth] == 0)
-                        killerMove[depth] = move.hashCode();
+                    if (killerMove[depth] == null)
+                        killerMove[depth] = move;
                 }
 
                 break;
@@ -286,8 +287,8 @@ public class Search {
                     if (!capture) {
                         HistoryHeuristic[move.getFrom().ordinal()][move.getTo().ordinal()] += depth * depth;
 
-                        if (killerMove[depth] == 0)
-                            killerMove[depth] = move.hashCode();
+                        if (killerMove[depth] == null)
+                            killerMove[depth] = move;
                     }
 
                     break;
@@ -398,13 +399,15 @@ public class Search {
             }
         }
 
-        //Captures
         if (alpha < beta) {
-            //Order Moves
-            List<ScoredMove> orderedMoves = orderCaptures(TableMove);
+            List<ScoredMove> orderedCaptures = orderCaptures(TableMove);
 
-            for (ScoredMove scoredMove : orderedMoves) {
+            //Winning Captures
+            for (ScoredMove scoredMove : orderedCaptures) {
                 Move move = scoredMove.move;
+
+                if (scoredMove.score < 10000)
+                    continue;
 
                 board.doMove(move);
 
@@ -424,63 +427,105 @@ public class Search {
                 }
 
             }
-        }
-        //Quiet
-        if (alpha < beta) {
-            //Order Moves
-            List<ScoredMove> orderedMoves = orderQuiet(depth, TableMove);
 
-            for (ScoredMove scoredMove : orderedMoves) {
-                Move move = scoredMove.move;
+            //Equal Captures
+            if (alpha < beta) {
+                for (ScoredMove scoredMove : orderedCaptures) {
+                    Move move = scoredMove.move;
 
-                boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+                    if (scoredMove.score >= 10000 || scoredMove.score < 0)
+                        continue;
 
-                board.doMove(move);
+                    board.doMove(move);
 
-                int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+                    int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
 
-                board.undoMove();
+                    board.undoMove();
 
-                if (score > alpha) {
-                    alpha = score;
-                    bestMove = move;
+                    if (score > alpha) {
+                        alpha = score;
+                        bestMove = move;
 
-                    //Fail-hard beta cut-off
-                    if (alpha >= beta) {
-
-                        if (!capture) {
-                            if (killerMove[depth] == 0)
-                                killerMove[depth] = move.hashCode();
+                        //Fail-hard beta cut-off
+                        if (alpha >= beta) {
+                            break;
                         }
 
-                        break;
+                    }
+
+                }
+            }
+
+            //Quiet Moves
+            if (alpha < beta) {
+                //Order Moves
+                List<ScoredMove> orderedMoves = orderQuiet(depth, TableMove);
+
+                for (ScoredMove scoredMove : orderedMoves) {
+                    Move move = scoredMove.move;
+
+                    boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
+
+                    board.doMove(move);
+
+                    int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+
+                    board.undoMove();
+
+                    if (score > alpha) {
+                        alpha = score;
+                        bestMove = move;
+
+                        //Fail-hard beta cut-off
+                        if (alpha >= beta) {
+
+                            if (!capture) {
+                                if (killerMove[depth] == null)
+                                    killerMove[depth] = move;
+                            }
+
+                            break;
+
+                        }
 
                     }
 
                 }
-
             }
+
+            //Losing Captures
+            if (alpha < beta) {
+                for (ScoredMove scoredMove : orderedCaptures) {
+                    Move move = scoredMove.move;
+
+                    if (scoredMove.score >= 0)
+                        continue;
+
+                    board.doMove(move);
+
+                    int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
+
+                    board.undoMove();
+
+                    if (score > alpha) {
+                        alpha = score;
+                        bestMove = move;
+
+                        //Fail-hard beta cut-off
+                        if (alpha >= beta) {
+                            break;
+                        }
+
+                    }
+
+                }
+            }
+
         }
 
         insertTable(alpha, beta, alphaOrig, depth, bestMove);
 
         return Math.min(alpha,beta);
-    }
-
-    void insertTable(int alpha, int beta, int alphaOrig, int depth, Move bestMove) {
-        int nodeType = 0;
-
-        //Fail-high (Cut-node)
-        if (alpha >= beta) {
-            nodeType = 1;
-        }
-        //Fail Low (All-node)
-        else if (alpha == alphaOrig) {
-            nodeType = -1;
-        }
-
-        TranspositionEntry te = new TranspositionEntry(alpha, depth, nodeType, bestMove);
-        TT.insert(board.getZobristKey(), te);
     }
 
     public int qSearch(int alpha, int beta, int depth) {
@@ -503,12 +548,9 @@ public class Search {
         if (alpha < staticEval)
             alpha = staticEval;
 
-        List<ScoredMove> orderedMoves = orderCapturesAndChecks();
+        List<ScoredMove> orderedCaptures = orderCaptures(null);
 
-        if (orderedMoves.isEmpty())
-            return staticEval;
-
-        for (ScoredMove scoredMove : orderedMoves) {
+        for (ScoredMove scoredMove : orderedCaptures) {
             Move m = scoredMove.move;
 
             int to = orderValueScore.get(board.getPiece(m.getTo()).ordinal());
@@ -531,19 +573,59 @@ public class Search {
 
             if( score > alpha ) {
                 alpha = score;
+
+                if( alpha >= beta )
+                    return beta;
+
             }
 
-            if( score >= beta )
-                return beta;
+        }
+
+        if (alpha < beta) {
+            List<ScoredMove> orderedChecks = orderChecks();
+
+            for (ScoredMove scoredMove : orderedChecks) {
+                Move m = scoredMove.move;
+
+                board.doMove(m);
+                int score = -qSearch(-beta, -alpha, depth - 1);
+                board.undoMove();
+
+                if( score > alpha ) {
+                    alpha = score;
+
+                    if( alpha >= beta )
+                        return beta;
+
+                }
+
+            }
+
         }
 
         return alpha;
     }
 
-    public List<ScoredMove> orderCapturesAndChecks() {
+    void insertTable(int alpha, int beta, int alphaOrig, int depth, Move bestMove) {
+        int nodeType = 0;
+
+        //Fail-high (Cut-node)
+        if (alpha >= beta) {
+            nodeType = 1;
+        }
+        //Fail Low (All-node)
+        else if (alpha == alphaOrig) {
+            nodeType = -1;
+        }
+
+        TranspositionEntry te = new TranspositionEntry(alpha, depth, nodeType, bestMove);
+        TT.insert(board.getZobristKey(), te);
+    }
+
+    public List<ScoredMove> orderChecks() {
 
         //Get Legal Moves
-        List<Move> legalMoves = board.legalMoves();
+        List<Move> legalMoves = generateQuiet();
 
         //Return this list
         List<ScoredMove> moves = new ArrayList<>();
@@ -551,10 +633,7 @@ public class Search {
         //Try all moves
         for (Move move : legalMoves) {
 
-            boolean aggressiveOrInCheck = board.getPiece(move.getTo()) != Piece.NONE;
-
-            if (board.isKingAttacked())
-                aggressiveOrInCheck = true;
+            boolean aggressiveOrInCheck = board.isKingAttacked();
 
             board.doMove(move);
 
@@ -609,9 +688,6 @@ public class Search {
 
     }
 
-
-    //Table Move [X]
-    //Counter Move
     public List<ScoredMove> orderAllMoves(int depth, Move best) {
 
         //Get Legal Moves
@@ -686,14 +762,14 @@ public class Search {
                 if (multipv[4] != null && move == multipv[4].move)
                     score += 6600;
 
-                if (move.hashCode() == killerMove[depth])
+                if (move == killerMove[depth])
                     score += 3200;
 
-                else if (move.hashCode() == killerMove[depth + 1]) {
+                else if (move == killerMove[depth + 1]) {
                     score += 3100;
                 }
 
-                else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
+                else if (depth > 1 && move == killerMove[depth - 1]) {
                     score += 3095;
                 }
             }
@@ -812,14 +888,14 @@ public class Search {
             if (multipv[4] != null && move == multipv[4].move)
                 score += 6600;
 
-            if (move.hashCode() == killerMove[depth])
+            if (move == killerMove[depth])
                 score += 3200;
 
-            else if (move.hashCode() == killerMove[depth + 1]) {
+            else if (move == killerMove[depth + 1]) {
                 score += 3100;
             }
 
-            else if (depth > 1 && move.hashCode() == killerMove[depth - 1]) {
+            else if (depth > 1 && move == killerMove[depth - 1]) {
                 score += 3095;
             }
 
