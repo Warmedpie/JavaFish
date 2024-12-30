@@ -264,36 +264,36 @@ public class Evaluation {
         return 0;
     }
 
-    public boolean onlyPawns(Board board) {
-        for (Piece p : board.boardToArray()) {
-            if (p != Piece.NONE && p != Piece.WHITE_PAWN && p != Piece.BLACK_PAWN && p != Piece.WHITE_KING && p != Piece.BLACK_KING)
-                return false;
-        }
+    public boolean onlyPawns(Board b) {
+        return    b.getBitboard(Piece.WHITE_QUEEN)
+                + b.getBitboard(Piece.WHITE_ROOK)
+                + b.getBitboard(Piece.WHITE_BISHOP)
+                + b.getBitboard(Piece.WHITE_KNIGHT)
+                + b.getBitboard(Piece.BLACK_QUEEN)
+                + b.getBitboard(Piece.BLACK_ROOK)
+                + b.getBitboard(Piece.BLACK_BISHOP)
+                + b.getBitboard(Piece.BLACK_KNIGHT) == 0;
 
-        return true;
     }
 
     public int evaluate(Board board) {
         int score = 0;
-        float whiteMat = 0;
-        float blackMat = 0;
+
+        float whiteMgPercentage = whitePhase(board);
+        float blackMgPercentage = blackPhase(board);
+        float phase = (whiteMgPercentage + blackMgPercentage) / 2;
+
+        //Returns draws
+        if (winnable(board) == 0)
+            return 0;
 
         int mgScoreWhite = 0;
         int egScoreWhite = 0;
         int mgScoreBlack = 0;
         int egScoreBlack = 0;
 
-        int atkDefScoreWhite = 0;
-        int atkDefScoreBlack = 0;
-
-        int whiteBishops = 0;
-        int blackBishops = 0;
-
         int whiteKing = 65;
         int blackKing = 65;
-
-        boolean whitePawn = false;
-        boolean blackPawn = false;
 
         for (int i = 0; i < 64; i++) {
 
@@ -305,40 +305,41 @@ public class Evaluation {
             if (isKingSquare(board, i) == 1) {
 
                 if (board.getPiece(sq) == Piece.WHITE_PAWN)
-                    atkDefScoreWhite += 27;
+                    mgScoreWhite += 27;
 
                 if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
-                    atkDefScoreBlack += 81;
+                    mgScoreBlack += 81;
                 if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.BISHOP) != 0)
-                    atkDefScoreBlack += 52;
+                    mgScoreBlack += 52;
                 if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.QUEEN) != 0)
-                    atkDefScoreBlack += 30;
+                    mgScoreBlack += 30;
                 if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.ROOK) != 0)
-                    atkDefScoreBlack += 44;
+                    mgScoreBlack += 44;
 
                 //Knight defender
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
-                    atkDefScoreWhite += 45;
+                    mgScoreWhite += 45;
             }
             if (isKingSquare(board, i) == -1) {
 
                 if (board.getPiece(sq) == Piece.BLACK_PAWN)
-                    atkDefScoreBlack += 27;
+                    mgScoreBlack += 27;
 
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
-                    atkDefScoreWhite += 81;
+                    mgScoreWhite += 81;
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.BISHOP) != 0)
-                    atkDefScoreWhite += 52;
+                    mgScoreWhite += 52;
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.QUEEN) != 0)
-                    atkDefScoreWhite += 30;
+                    mgScoreWhite += 30;
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.ROOK) != 0)
-                    atkDefScoreWhite += 44;
+                    mgScoreWhite += 44;
 
                 //Knight defender
                 if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
-                    atkDefScoreBlack += 45;
+                    mgScoreBlack += 45;
 
             }
+
             //Space
             if (board.getPiece(Square.squareAt(i - 8)) == Piece.WHITE_PAWN) {
                 score += 2;
@@ -353,6 +354,7 @@ public class Evaluation {
             if (board.getPiece(Square.squareAt(i + 16)) == Piece.BLACK_PAWN) {
                 score -= 2;
             }
+
             if (p == Piece.NONE)
                 continue;
 
@@ -360,11 +362,9 @@ public class Evaluation {
                 mgScoreWhite += mgPawn + mgPawnTableWhite[i];
                 egScoreWhite += egPawn + egPawnTableWhite[i];
 
-                whitePawn = true;
-
                 //Pawn shield
                 if (isKingSquare(board, i) == 1)
-                    atkDefScoreWhite += 20;
+                    mgScoreWhite += 20;
 
                 continue;
             }
@@ -373,10 +373,8 @@ public class Evaluation {
                 mgScoreWhite += mgKnight + knightTable[i];
                 egScoreWhite += egKnight + knightTable[i];
 
-                whiteMat += 3;
-
                 if (Square.squareAt(i).getRank() == Rank.RANK_1)
-                    score -= 25;
+                    mgScoreWhite -= 25;
 
                 continue;
             }
@@ -385,12 +383,8 @@ public class Evaluation {
                 mgScoreWhite += mgBishop + bishopTableWhite[i];
                 egScoreWhite += egBishop + bishopTableWhite[i];
 
-                whiteBishops++;
-
-                whiteMat += 3;
-
                 if (Square.squareAt(i).getRank() == Rank.RANK_1)
-                    score -= 25;
+                    mgScoreWhite -= 25;
 
                 continue;
             }
@@ -400,16 +394,12 @@ public class Evaluation {
                 mgScoreWhite += mgRook + rookTableWhite[i];
                 egScoreWhite += egRook + rookTableWhite[i];
 
-                whiteMat += 5;
-
                 continue;
             }
 
             if (p==Piece.WHITE_QUEEN) {
                 mgScoreWhite += mgQueen + queenTable[i];
                 egScoreWhite += egQueen + queenTable[i];
-
-                whiteMat += 9;
 
                 continue;
             }
@@ -427,11 +417,9 @@ public class Evaluation {
                 mgScoreBlack += mgPawn + mgPawnTableBlack[i];
                 egScoreBlack += egPawn + egPawnTableBlack[i];
 
-                blackPawn = true;
-
                 //Pawn shield
                 if (isKingSquare(board, i) == -1)
-                    atkDefScoreBlack += 20;
+                    mgScoreBlack -= 20;
 
                 continue;
             }
@@ -440,10 +428,8 @@ public class Evaluation {
                 mgScoreBlack += mgKnight + knightTable[i];
                 egScoreBlack += egKnight + knightTable[i];
 
-                blackMat += 3;
-
                 if (Square.squareAt(i).getRank() == Rank.RANK_8)
-                    score += 25;
+                    mgScoreBlack -= 25;
 
                 continue;
             }
@@ -453,12 +439,8 @@ public class Evaluation {
                 mgScoreBlack += mgBishop + bishopTableBlack[i];
                 egScoreBlack += egBishop + bishopTableBlack[i];
 
-                blackBishops++;
-
-                blackMat += 3;
-
                 if (Square.squareAt(i).getRank() == Rank.RANK_8)
-                    score += 25;
+                    mgScoreBlack -= 25;
 
                 continue;
             }
@@ -468,16 +450,12 @@ public class Evaluation {
                 mgScoreBlack += mgRook + rookTableBlack[i];
                 egScoreBlack += egRook + rookTableBlack[i];
 
-                blackMat += 5;
-
                 continue;
             }
 
             if (p==Piece.BLACK_QUEEN) {
                 mgScoreBlack += mgQueen + queenTable[i];
                 egScoreBlack += egQueen + queenTable[i];
-
-                blackMat += 9;
 
                 continue;
             }
@@ -493,30 +471,18 @@ public class Evaluation {
 
         }
 
-        float whiteMgPercentage =  Math.max(0,((whiteMat - 10) / 21));
-        float blackMgPercentage =  Math.max(0,((blackMat - 10) / 21));
-        float phase = (whiteMgPercentage + blackMgPercentage) / 2;
-
         //Piece value and piece square
         score -= (int) ((whiteMgPercentage * mgScoreBlack) + ((1 - whiteMgPercentage) * egScoreBlack));
         score += (int) ((blackMgPercentage * mgScoreWhite) + ((1 - blackMgPercentage) * egScoreWhite));
 
-        //Attack and defense score
-        score += (int) (atkDefScoreWhite * blackMgPercentage);
-        score -= (int) (atkDefScoreBlack * whiteMgPercentage);
-
         //Bishop pairs
-        if (whiteBishops == 2)
+        if (Long.bitCount(board.getBitboard(Piece.WHITE_BISHOP)) == 2)
             score += (int)(10 * phase + 17 * (1-phase));
 
-        if (blackBishops == 2)
+        if (Long.bitCount(board.getBitboard(Piece.BLACK_BISHOP)) == 2)
             score -= (int)(10 * phase + 17 * (1-phase));
 
-        //Returns draws
-        if (winnable(whiteMat, blackMat, blackPawn, whitePawn) == 0)
-            return 0;
-
-        if (whiteMat < 4 && blackMat > 4) {
+        if (Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) == 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) > 0) {
             score += mateTableKing[whiteKing];
 
             Square whiteSq = Square.squareAt(whiteKing);
@@ -527,7 +493,7 @@ public class Evaluation {
             score += (int)distance;
 
         }
-        if (blackMat < 4 && whiteMat > 4) {
+        else if (Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) > 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) == 0) {
             score -= mateTableKing[blackKing];
 
             Square whiteSq = Square.squareAt(whiteKing);
@@ -559,12 +525,31 @@ public class Evaluation {
         return 0;
     }
 
-    int winnable(float whiteMat, float blackMat, boolean blackPawn, boolean whitePawn) {
-        if (whiteMat < 5 && blackMat < 5 && !blackPawn && !whitePawn)
+    int winnable(Board b) {
+        if (b.isInsufficientMaterial())
             return 0;
 
-
         return 1;
+
+    }
+
+    public float whitePhase(Board b) {
+        float whiteMat = (Long.bitCount(b.getBitboard(Piece.WHITE_QUEEN)) * 9) +
+                (Long.bitCount(b.getBitboard(Piece.WHITE_ROOK)) * 5) +
+                (Long.bitCount(b.getBitboard(Piece.WHITE_BISHOP)) * 3) +
+                (Long.bitCount(b.getBitboard(Piece.WHITE_KNIGHT)) * 3);
+
+        return Math.max(0,((whiteMat - 10) / 21));
+
+    }
+
+    public float blackPhase(Board b) {
+        float blackMat = (Long.bitCount(b.getBitboard(Piece.BLACK_QUEEN)) * 9) +
+                (Long.bitCount(b.getBitboard(Piece.BLACK_ROOK)) * 5) +
+                (Long.bitCount(b.getBitboard(Piece.BLACK_BISHOP)) * 3) +
+                (Long.bitCount(b.getBitboard(Piece.BLACK_KNIGHT)) * 3);
+
+        return Math.max(0,((blackMat - 10) / 21));
 
     }
 

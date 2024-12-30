@@ -4,8 +4,8 @@ Type=0
 CurrSwissRound=0
 Rounds=1000
 CurrentPair=1
-CurrentRound=46
-Level=1 5
+CurrentRound=51
+Level=1 2
 [Options]
 QuitAfterTournament=0
 ShutDownAfterTournament=0
@@ -64,14 +64,14 @@ OS=Windows 10 Home Home Edition (Build 9200) 64 bit
 Website=
 E-Mail=
 ArenaVersion=Arena 3.5.1
-LastGameDate=2024.12.27
-LastGameTime=23:29:47
-FirstGameDate=2024.12.27
-FirstGameTime=14:45:58
+LastGameDate=2024.12.29
+LastGameTime=21:23:09
+FirstGameDate=2024.12.29
+FirstGameTime=16:55:30
 [PairingLastBoardPosition]
 JavaFish ------ JavaFishOld=RKQNBBNR
 [PairingResults]
-JavaFish ------ JavaFishOld=10½11½1½½0101110101½½½½½1½½½½½00½00½½11½1½½010?
+JavaFish ------ JavaFishOld=½½0½½01½½½½½½0½1½½1½½0010½½1½0½0½½11½½1½½½111½½0000?
 [Participants]
 Engine1=JavaFish
 Engine2=JavaFishOld
