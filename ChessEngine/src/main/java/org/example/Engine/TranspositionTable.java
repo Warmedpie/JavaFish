@@ -9,7 +9,7 @@ public class TranspositionTable {
 
     Map<Long, TranspositionEntry> table = new HashMap<>();
 
-    int N = 1000000;
+    int N = 10000000;
     TranspositionEntry[] tableArray = new TranspositionEntry[N];
 
     void insert(Long key, TranspositionEntry entry) {
@@ -37,7 +37,7 @@ public class TranspositionTable {
             return;
         }
 
-        if (tableArray[index].depth < entry.depth) {
+        if (tableArray[index].depth < entry.depth || tableArray[index].hash != key) {
             tableArray[index] = entry;
         }
 
@@ -45,11 +45,14 @@ public class TranspositionTable {
 
     TranspositionEntry getArray(Long key) {
         int index = getTableIndex(key);
-        return tableArray[index];
-    }
 
-    protected int getTableIndex(long zobristKey) {
-        return (int)(zobristKey & 0x7FFFFFFF) % N;
+        if (tableArray[index] == null)
+            return null;
+
+        if (tableArray[index].hash == key)
+            return tableArray[index];
+
+        return null;
     }
 
     TranspositionEntry get(Long key) {
@@ -59,8 +62,14 @@ public class TranspositionTable {
         return table.get(key);
     }
 
+    protected int getTableIndex(long zobristKey) {
+        return (int)(zobristKey & 0x7FFFFFFF) % N;
+    }
+
     void clear() {
+
         table.clear();
+
     }
 
 }

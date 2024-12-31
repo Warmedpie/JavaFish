@@ -192,15 +192,17 @@ public class Search {
         if (winLossDraw < 1)
             return winLossDraw;
 
-        if (depth <= 2) {
+        if (depth <= 3) {
             return negamax(alpha, beta, depth, plyDeep);
         }
         boolean inCheck = board.isKingAttacked();
 
         //NULL MOVE PRUNE
         //DO NOT PRUNE IF IN CHECK
+        //ONLY PRUNE IN NULL WINDOWS
         if (depth > 4 && Math.abs(alpha-beta) == 1 && !inCheck && !evaluation.onlyPawns(board)) {
             int staticEval = evaluation.evaluate(board);
+            //DO NOT NULL PRUNE DRAWS, ONLY NULL PRUNE WHEN STATIC EVAL IS GREATER THAN OR EQUAL TO BETA
             if (staticEval != 0 && staticEval >= beta) {
                 int R = depth > 6 ? 4 : 3;
 
@@ -240,8 +242,7 @@ public class Search {
         }
 
         if (alpha < beta) {
-
-            //Order Moves Non-Losing Captures
+            //Order all moves
             List<ScoredMove> orderedMoves = orderAllMoves(depth, TableMove);
 
             for (ScoredMove scoredMove : orderedMoves) {
@@ -297,7 +298,6 @@ public class Search {
 
                 i++;
             }
-
 
         }
 
@@ -404,10 +404,11 @@ public class Search {
 
             //Winning Captures
             for (ScoredMove scoredMove : orderedCaptures) {
-                Move move = scoredMove.move;
 
                 if (scoredMove.score < 10000)
                     continue;
+
+                Move move = scoredMove.move;
 
                 board.doMove(move);
 
@@ -431,10 +432,11 @@ public class Search {
             //Equal Captures
             if (alpha < beta) {
                 for (ScoredMove scoredMove : orderedCaptures) {
-                    Move move = scoredMove.move;
 
                     if (scoredMove.score >= 10000 || scoredMove.score < 0)
                         continue;
+
+                    Move move = scoredMove.move;
 
                     board.doMove(move);
 
@@ -464,8 +466,6 @@ public class Search {
                 for (ScoredMove scoredMove : orderedMoves) {
                     Move move = scoredMove.move;
 
-                    boolean capture = board.getPiece(move.getTo()) != Piece.NONE;
-
                     board.doMove(move);
 
                     int score = -negamax(-beta, -alpha, depth - 1, plyDeep + 1);
@@ -479,10 +479,8 @@ public class Search {
                         //Fail-hard beta cut-off
                         if (alpha >= beta) {
 
-                            if (!capture) {
-                                if (killerMove[depth] == null)
-                                    killerMove[depth] = move;
-                            }
+                            if (killerMove[depth] == null)
+                                killerMove[depth] = move;
 
                             break;
 
@@ -496,10 +494,11 @@ public class Search {
             //Losing Captures
             if (alpha < beta) {
                 for (ScoredMove scoredMove : orderedCaptures) {
-                    Move move = scoredMove.move;
 
                     if (scoredMove.score >= 0)
                         continue;
+
+                    Move move = scoredMove.move;
 
                     board.doMove(move);
 
@@ -618,8 +617,10 @@ public class Search {
             nodeType = -1;
         }
 
-        TranspositionEntry te = new TranspositionEntry(alpha, depth, nodeType, bestMove);
-        TT.insert(board.getZobristKey(), te);
+        long hash = board.getZobristKey();
+
+        TranspositionEntry te = new TranspositionEntry(alpha, depth, nodeType, bestMove, hash);
+        TT.insert(hash, te);
     }
 
     public List<ScoredMove> orderChecks() {
@@ -918,7 +919,7 @@ public class Search {
         if (board.isRepetition())
             return 0;
 
-        if (board.legalMoves().isEmpty()) {
+        if (!hasLegalMoves()) {
 
             if (board.isKingAttacked()) {
                 return -999999 + depth;
@@ -1076,6 +1077,20 @@ public class Search {
         return null;
     }
 
+    List<Move> generateCaptures() {
+        try {
+            List<Move> moves = MoveGenerator.generatePseudoLegalCaptures(board);
+            moves.removeIf((move) -> {
+                return !board.isMoveLegal(move, false);
+            });
+            return moves;
+        } catch (Exception var2) {
+            Exception e = var2;
+            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
+        }
+
+    }
+
     static List<Move> generatePseudoLegalQuiet() {
         List<Move> moves = new LinkedList();
 
@@ -1092,20 +1107,6 @@ public class Search {
         return moves;
     }
 
-    List<Move> generateCaptures() {
-        try {
-            List<Move> moves = MoveGenerator.generatePseudoLegalCaptures(board);
-            moves.removeIf((move) -> {
-                return !board.isMoveLegal(move, false);
-            });
-            return moves;
-        } catch (Exception var2) {
-            Exception e = var2;
-            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
-        }
-
-    }
-
     List<Move> generateQuiet() {
         try {
             List<Move> moves = generatePseudoLegalQuiet();
@@ -1118,6 +1119,84 @@ public class Search {
             throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
         }
 
+    }
+
+    boolean hasLegalMoves() {
+        List<Move> moves = new LinkedList();
+
+        generatePawnMoves(board, moves);
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+
+        generateKnightMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generateBishopMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generateRookMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generateQueenMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generateKingMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generatePawnCaptures(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        generateCastleMoves(board, moves);
+
+        moves.removeIf((move) -> {
+            return !board.isMoveLegal(move, false);
+        });
+
+        if (!moves.isEmpty())
+            return true;
+
+        return false;
     }
 
 }

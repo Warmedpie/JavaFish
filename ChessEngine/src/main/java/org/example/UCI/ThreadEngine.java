@@ -93,6 +93,7 @@ public class ThreadEngine implements Runnable {
                 }
             }
         System.out.println("bestmove " + best);
+
     }
 
     int mateDisplayScore(int score) {

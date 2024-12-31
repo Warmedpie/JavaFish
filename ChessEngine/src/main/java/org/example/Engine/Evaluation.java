@@ -292,9 +292,6 @@ public class Evaluation {
         int mgScoreBlack = 0;
         int egScoreBlack = 0;
 
-        int whiteKing = 65;
-        int blackKing = 65;
-
         for (int i = 0; i < 64; i++) {
 
             Square sq = Square.squareAt(i);
@@ -302,7 +299,9 @@ public class Evaluation {
             Piece p = board.getPiece(sq);
 
             //Attackers and defenders
-            if (isKingSquare(board, i) == 1) {
+            int kingSquare = isKingSquare(board, i);
+
+            if (kingSquare == 1) {
 
                 if (board.getPiece(sq) == Piece.WHITE_PAWN)
                     mgScoreWhite += 27;
@@ -320,7 +319,7 @@ public class Evaluation {
                 if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
                     mgScoreWhite += 45;
             }
-            if (isKingSquare(board, i) == -1) {
+            if (kingSquare == -1) {
 
                 if (board.getPiece(sq) == Piece.BLACK_PAWN)
                     mgScoreBlack += 27;
@@ -363,7 +362,7 @@ public class Evaluation {
                 egScoreWhite += egPawn + egPawnTableWhite[i];
 
                 //Pawn shield
-                if (isKingSquare(board, i) == 1)
+                if (kingSquare == 1)
                     mgScoreWhite += 20;
 
                 continue;
@@ -408,8 +407,6 @@ public class Evaluation {
                 mgScoreWhite += mgKingTableWhite[i];
                 egScoreWhite += egKingTableWhite[i];
 
-                whiteKing = i;
-
                 continue;
             }
 
@@ -418,7 +415,7 @@ public class Evaluation {
                 egScoreBlack += egPawn + egPawnTableBlack[i];
 
                 //Pawn shield
-                if (isKingSquare(board, i) == -1)
+                if (kingSquare == -1)
                     mgScoreBlack -= 20;
 
                 continue;
@@ -465,8 +462,6 @@ public class Evaluation {
                 mgScoreBlack += mgKingTableBlack[i];
                 egScoreBlack += egKingTableBlack[i];
 
-                blackKing = i;
-
             }
 
         }
@@ -482,7 +477,11 @@ public class Evaluation {
         if (Long.bitCount(board.getBitboard(Piece.BLACK_BISHOP)) == 2)
             score -= (int)(10 * phase + 17 * (1-phase));
 
-        if (Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) == 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) > 0) {
+        if (whiteMgPercentage == 0f && Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) == 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) > 0) {
+
+            int whiteKing = 63 - Long.numberOfLeadingZeros(board.getBitboard(Piece.WHITE_KING));
+            int blackKing = 63 - Long.numberOfLeadingZeros(board.getBitboard(Piece.BLACK_KING));
+
             score += mateTableKing[whiteKing];
 
             Square whiteSq = Square.squareAt(whiteKing);
@@ -493,7 +492,11 @@ public class Evaluation {
             score += (int)distance;
 
         }
-        else if (Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) > 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) == 0) {
+        else if (blackMgPercentage == 0f && Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) > 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) == 0) {
+
+            int whiteKing = 63 - Long.numberOfLeadingZeros(board.getBitboard(Piece.WHITE_KING));
+            int blackKing = 63 - Long.numberOfLeadingZeros(board.getBitboard(Piece.BLACK_KING));
+
             score -= mateTableKing[blackKing];
 
             Square whiteSq = Square.squareAt(whiteKing);
@@ -505,6 +508,13 @@ public class Evaluation {
 
         }
 
+        if (whiteMgPercentage < 0.10f || blackMgPercentage < 0.10f) {
+            //50 move draw reduction
+            int movesBeforeDraw = 100 - board.getHalfMoveCounter();
+            score = (movesBeforeDraw * score) / 100;
+        }
+
+
         if (board.getSideToMove() == Side.BLACK)
             score *= -1;
 
@@ -513,23 +523,47 @@ public class Evaluation {
     }
 
     int isKingSquare(Board b, int sq) {
-        int ksW = b.getKingSquare(Side.WHITE).ordinal();
-        int ksB = b.getKingSquare(Side.BLACK).ordinal();
+        //King square white distance
+        int ksWD = 63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.WHITE_KING)) - sq;
 
-        if (Math.abs(ksW - sq) == 1 || Math.abs(ksW - sq) == 8 || Math.abs(ksW - sq) == 7 || Math.abs(ksW - sq) == 9)
+        if (Math.abs(ksWD) == 1 || Math.abs(ksWD) == 8 || Math.abs(ksWD) == 7 || Math.abs(ksWD) == 9)
             return 1;
 
-        if (Math.abs(ksB - sq) == 1 || Math.abs(ksB - sq) == 8 || Math.abs(ksB - sq) == 7 || Math.abs(ksB - sq) == 9)
+        //King square black distance
+        int ksBD = 63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.BLACK_KING)) - sq;
+
+        if (Math.abs(ksBD) == 1 || Math.abs(ksBD) == 8 || Math.abs(ksBD) == 7 || Math.abs(ksBD) == 9)
             return -1;
 
         return 0;
     }
 
     int winnable(Board b) {
-        if (b.isInsufficientMaterial())
-            return 0;
+        if (b.getBitboard(Piece.WHITE_PAWN) != 0 || b.getBitboard(Piece.BLACK_PAWN) != 0)
+            return 1;
 
-        return 1;
+        if (b.getBitboard(Piece.WHITE_QUEEN) != 0 || b.getBitboard(Piece.BLACK_QUEEN) != 0)
+            return 1;
+
+        if (b.getBitboard(Piece.WHITE_ROOK) != 0 || b.getBitboard(Piece.WHITE_ROOK) != 0)
+            return 1;
+
+        long bbN = b.getBitboard(Piece.WHITE_KNIGHT);
+        long bbn = b.getBitboard(Piece.BLACK_KNIGHT);
+
+        long bbB = b.getBitboard(Piece.WHITE_BISHOP);
+        long bbb = b.getBitboard(Piece.BLACK_BISHOP);
+
+        if ((bbN != 0 && bbB != 0) || (bbn != 0 && bbb != 0))
+            return 1;
+
+        if (Long.bitCount(bbN) >= 3 || Long.bitCount(bbn) >= 3)
+            return 1;
+
+        if (Long.bitCount(bbB) >= 2 || Long.bitCount(bbb) >= 2)
+            return 1;
+
+        return 0;
 
     }
 

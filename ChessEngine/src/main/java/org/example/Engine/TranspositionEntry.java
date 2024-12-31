@@ -6,6 +6,7 @@ public class TranspositionEntry {
     public int score;
     public int depth;
     public Move move;
+    public long hash;
 
     /*
     -1: Fail Low (All-Node)
@@ -15,11 +16,12 @@ public class TranspositionEntry {
      */
     public int nodeType;
 
-    public TranspositionEntry(int score, int depth, int nodeType, Move move) {
+    public TranspositionEntry(int score, int depth, int nodeType, Move move, long hash) {
         this.score = score;
         this.depth = depth;
         this.nodeType = nodeType;
         this.move = move;
+        this.hash = hash;
     }
 
 }
