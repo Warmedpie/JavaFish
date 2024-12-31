@@ -4,8 +4,8 @@ Type=0
 CurrSwissRound=0
 Rounds=100
 CurrentPair=1
-CurrentRound=20
-Level=1 3
+CurrentRound=25
+Level=1 1
 [Options]
 QuitAfterTournament=0
 ShutDownAfterTournament=0
@@ -65,11 +65,11 @@ Website=
 E-Mail=
 ArenaVersion=Arena 3.5.1
 LastGameDate=2024.12.31
-LastGameTime=13:04:05
+LastGameTime=13:29:39
 FirstGameDate=2024.12.31
 FirstGameTime=10:05:53
 [PairingResults]
-JavaFish ------ JavaFishOld=½½110½1½0110½1½½110½?
+JavaFish ------ JavaFishOld=½½110½1½0110½1½½110½11111?
 [Participants]
 Engine1=JavaFish
 Engine2=JavaFishOld

@@ -583,7 +583,7 @@ public class Evaluation {
                 (Long.bitCount(b.getBitboard(Piece.BLACK_BISHOP)) * 3) +
                 (Long.bitCount(b.getBitboard(Piece.BLACK_KNIGHT)) * 3);
 
-        return Math.max(0,((blackMat - 10) / 21));
+        return  Math.max(0,((blackMat - 10) / 21));
 
     }
 

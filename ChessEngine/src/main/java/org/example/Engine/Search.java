@@ -181,6 +181,9 @@ public class Search {
         if (checkTimeOut())
             return -312312;
 
+        if (board.isRepetition())
+            return 0;
+
         nodes++;
         TranspositionEntry node = TT.get(board.getZobristKey());
         if (nodeTableBreak(node,depth,alpha,beta)) {
@@ -195,6 +198,7 @@ public class Search {
         if (depth <= 3) {
             return negamax(alpha, beta, depth, plyDeep);
         }
+
         boolean inCheck = board.isKingAttacked();
 
         //NULL MOVE PRUNE
@@ -323,6 +327,9 @@ public class Search {
 
         if (checkTimeOut())
             return -312312;
+
+        if (board.isRepetition())
+            return 0;
 
         nodes++;
         TranspositionEntry node = TT.get(board.getZobristKey());
@@ -916,9 +923,6 @@ public class Search {
     //Search Helper functions
     public int mateScore(int depth) {
 
-        if (board.isRepetition())
-            return 0;
-
         if (!hasLegalMoves()) {
 
             if (board.isKingAttacked()) {
@@ -970,10 +974,6 @@ public class Search {
 
     }
 
-    public float firstMoveCuts() {
-        return (float)this.firstMoveBetaCuts / (float)this.cutMoves;
-    }
-
     public void configureStats(int t) {
         time = t;
         this.TBhits = 0;
@@ -984,31 +984,12 @@ public class Search {
         this.firstMoveBetaCuts = 0;
     }
 
+    public float firstMoveCuts() {
+        return (float)this.firstMoveBetaCuts / (float)this.cutMoves;
+    }
+
     //Display functions
     ScoredMove[] multipv = new ScoredMove[5];
-    public List<Move> getPV() {
-
-        List<Move> toReturn = new ArrayList<>();
-
-        Board b = new Board();
-        b.loadFromFen(board.getFen());
-        int i = 0;
-        while (TT.get(b.getZobristKey()).depth > 0) {
-            if (TT.get(b.getZobristKey()).move.getTo() != TT.get(b.getZobristKey()).move.getFrom())
-                toReturn.add(TT.get(b.getZobristKey()).move);
-
-            if (b.getPiece(TT.get(b.getZobristKey()).move.getFrom()) != Piece.NONE)
-                b.doMove(TT.get(b.getZobristKey()).move);
-            else
-                break;
-            i++;
-
-            if (i > 20)
-                return toReturn;
-        }
-
-        return toReturn;
-    }
 
     public List<Move> getPV(int n) {
 
@@ -1065,7 +1046,7 @@ public class Search {
     }
 
     public Move getLastMove() {
-        if (board.getBackup().size() == 0)
+        if (board.getBackup().isEmpty())
             return null;
 
         MoveBackup b = (MoveBackup) board.getBackup().getLast();
@@ -1080,9 +1061,7 @@ public class Search {
     List<Move> generateCaptures() {
         try {
             List<Move> moves = MoveGenerator.generatePseudoLegalCaptures(board);
-            moves.removeIf((move) -> {
-                return !board.isMoveLegal(move, false);
-            });
+            moves.removeIf((move) -> !board.isMoveLegal(move, false));
             return moves;
         } catch (Exception var2) {
             Exception e = var2;
@@ -1110,9 +1089,8 @@ public class Search {
     List<Move> generateQuiet() {
         try {
             List<Move> moves = generatePseudoLegalQuiet();
-            moves.removeIf((move) -> {
-                return !board.isMoveLegal(move, false);
-            });
+            moves.removeIf((move) -> !board.isMoveLegal(move, false));
+
             return moves;
         } catch (Exception var2) {
             Exception e = var2;
@@ -1124,77 +1102,64 @@ public class Search {
     boolean hasLegalMoves() {
         List<Move> moves = new LinkedList();
 
-        generatePawnMoves(board, moves);
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
+        int i = 0;
 
-        if (!moves.isEmpty())
-            return true;
+        generateKingMoves(board, moves);
+
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
+
+        generatePawnMoves(board, moves);
+
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
 
         generateKnightMoves(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         generateBishopMoves(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         generateRookMoves(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         generateQueenMoves(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
-
-        generateKingMoves(board, moves);
-
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         generatePawnCaptures(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         generateCastleMoves(board, moves);
 
-        moves.removeIf((move) -> {
-            return !board.isMoveLegal(move, false);
-        });
-
-        if (!moves.isEmpty())
-            return true;
+        for (int q = i; i < moves.size(); i++) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+        }
 
         return false;
     }
