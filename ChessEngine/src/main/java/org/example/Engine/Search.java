@@ -633,7 +633,7 @@ public class Search {
     public List<ScoredMove> orderChecks() {
 
         //Get Legal Moves
-        List<Move> legalMoves = generateQuiet();
+        List<Move> legalMoves = generatePseudoLegalQuiet();
 
         //Return this list
         List<ScoredMove> moves = new ArrayList<>();
@@ -641,51 +641,28 @@ public class Search {
         //Try all moves
         for (Move move : legalMoves) {
 
-            boolean aggressiveOrInCheck = board.isKingAttacked();
+            if (!board.isMoveLegal(move, false))
+                continue;
+
+            boolean checkOrInCheck = board.isKingAttacked();
 
             board.doMove(move);
 
             if (board.isKingAttacked())
-                aggressiveOrInCheck = true;
+                checkOrInCheck = true;
 
             board.undoMove();
 
-            if (aggressiveOrInCheck) {
-                int score = 0;
+            if (!checkOrInCheck)
+                continue;
 
-                int to = board.getPiece(move.getTo()).ordinal();
-                int from = board.getPiece(move.getFrom()).ordinal();
+            if (board.getPiece(move.getTo()) != Piece.NONE)
+                continue;
 
-                Side defender = Side.WHITE;
+            int score = evaluation.PsqM(board.getPiece(move.getFrom()),move);
 
-                if (board.getSideToMove() == Side.WHITE)
-                    defender = Side.BLACK;
-
-                //Better value capture
-                if (to < 11 && from < 11) {
-                    //hanging piece
-                    if(board.squareAttackedBy(move.getTo(), defender) == 0)
-                        score += 1000 + orderValueScore.get(to);
-                    //Better value capture
-                    else if (orderValueScore.get(to) > orderValueScore.get(from)) {
-                        score += 1000 + orderValueScore.get(to) - orderValueScore.get(from);
-                    }
-                    //Equal Captures
-                    else if (Math.abs(orderValueScore.get(to) - orderValueScore.get(from)) < 30) {
-                        score += 500 + to - from;
-                    }
-                    //Bad captures
-                    else {
-                        score += orderValueScore.get(to) - orderValueScore.get(from);
-                    }
-                }
-                else {
-                    score += evaluation.PsqM(board.getPiece(move.getFrom()),move);
-                }
-
-                ScoredMove m = new ScoredMove(move, score);
-                moves.add(m);
-            }
+            ScoredMove m = new ScoredMove(move, score);
+            moves.add(m);
         }
 
         if (moves.size() > 1) {
@@ -798,13 +775,18 @@ public class Search {
     public List<ScoredMove> orderCaptures(Move best) {
 
         //Get Legal Moves
-        List<Move> legalMoves = generateCaptures();
+        List<Move> legalMoves = MoveGenerator.generatePseudoLegalCaptures(board);
 
         //Return this list
         List<ScoredMove> moves = new ArrayList<>();
 
         //Try all moves
         for (Move move : legalMoves) {
+
+
+            if (!board.isMoveLegal(move, false))
+                continue;
+
             int score;
 
             //Table PV move already tested
@@ -854,14 +836,18 @@ public class Search {
     public List<ScoredMove> orderQuiet(int depth, Move best) {
 
         //Get Legal Moves
-        List<Move> legalMoves = generateQuiet();
+        List<Move> legalMoves = generatePseudoLegalQuiet();
 
         //Return this list
         List<ScoredMove> moves = new ArrayList<>();
 
         //Try all moves
         for (Move move : legalMoves) {
-            int score;
+
+            if (!board.isMoveLegal(move, false))
+                continue;
+
+            int score = 0;
 
             //Table PV move already tested
             if (move == best)
@@ -1058,18 +1044,6 @@ public class Search {
         return null;
     }
 
-    List<Move> generateCaptures() {
-        try {
-            List<Move> moves = MoveGenerator.generatePseudoLegalCaptures(board);
-            moves.removeIf((move) -> !board.isMoveLegal(move, false));
-            return moves;
-        } catch (Exception var2) {
-            Exception e = var2;
-            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
-        }
-
-    }
-
     static List<Move> generatePseudoLegalQuiet() {
         List<Move> moves = new LinkedList();
 
@@ -1086,19 +1060,6 @@ public class Search {
         return moves;
     }
 
-    List<Move> generateQuiet() {
-        try {
-            List<Move> moves = generatePseudoLegalQuiet();
-            moves.removeIf((move) -> !board.isMoveLegal(move, false));
-
-            return moves;
-        } catch (Exception var2) {
-            Exception e = var2;
-            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
-        }
-
-    }
-
     boolean hasLegalMoves() {
         List<Move> moves = new LinkedList();
 
@@ -1106,31 +1067,39 @@ public class Search {
 
         generateKingMoves(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
-        }
 
-        generatePawnMoves(board, moves);
-
-        for (int q = i; i < moves.size(); i++) {
-            if (board.isMoveLegal(moves.get(i), false))
-                return true;
+            i++;
         }
 
 
         generateKnightMoves(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
+
+            i++;
+        }
+
+        generatePawnMoves(board, moves);
+
+        while (i < moves.size()) {
+            if (board.isMoveLegal(moves.get(i), false))
+                return true;
+
+            i++;
         }
 
         generateBishopMoves(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
+
+            i++;
         }
 
         generateRookMoves(board, moves);
@@ -1142,23 +1111,29 @@ public class Search {
 
         generateQueenMoves(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
+
+            i++;
         }
 
         generatePawnCaptures(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
+
+            i++;
         }
 
         generateCastleMoves(board, moves);
 
-        for (int q = i; i < moves.size(); i++) {
+        while (i < moves.size()) {
             if (board.isMoveLegal(moves.get(i), false))
                 return true;
+
+            i++;
         }
 
         return false;
