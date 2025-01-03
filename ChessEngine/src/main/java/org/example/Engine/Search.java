@@ -338,25 +338,6 @@ public class Search {
             return node.score;
         }
 
-        if (node != null && node.depth >= depth) {
-            //this is the PV node.
-            if (node.nodeType == 0) {
-                return node.score;
-            }
-
-            //Fail-high (Cut-node)
-            if (node.nodeType == 1) {
-                if (node.score >= beta)
-                    return node.score;
-            }
-
-            //Fail-low (All-Node)
-            if (node.nodeType == -1) {
-                if (node.score <= alpha)
-                    return node.score;
-            }
-        }
-
         int winLossDraw = mateScore(plyDeep);
         if (winLossDraw < 1)
             return winLossDraw;

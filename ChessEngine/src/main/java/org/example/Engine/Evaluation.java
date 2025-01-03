@@ -175,7 +175,7 @@ public class Evaluation {
                         -17, -20, -12, -27, -30, -25, -14, -36,
                         -9,  24,   2, -16, -20,   6,  22, -22,
                         29,  -1, -20,  -7,  -8,  -4, -38, -29,
-                        -65,  23,  16, -15, -56, -34,   2,  13, 0
+                        -65,  23,  16, -15, -56, -34,   2,  13
                 };
 
         mgKingTableBlack = new int[]
@@ -191,14 +191,14 @@ public class Evaluation {
 
         egKingTableWhite = new int[]
                 {
-                        -53, -34, -21, -11, -28, -14, -24, -43
+                        -53, -34, -21, -11, -28, -14, -24, -43,
                         -27, -11,   4,  13,  14,   4,  -5, -17,
                         -19,  -3,  11,  21,  23,  16,   7,  -9,
                         -18,  -4,  21,  24,  27,  23,   9, -11,
                         -8,  22,  24,  27,  26,  33,  26,   3,
                         10,  17,  23,  15,  20,  45,  44,  13,
                         -12,  17,  14,  17,  17,  38,  23,  11,
-                        -74, -35, -18, -18, -11,  15,   4, -17, 0
+                        -74, -35, -18, -18, -11,  15,   4, -17
                 };
 
         egKingTableBlack = new int[]
@@ -471,7 +471,7 @@ public class Evaluation {
 
         }
 
-        //Piece value and piece square
+        //mg and eg eval weighted
         score -= (int) ((whiteMgPercentage * mgScoreBlack) + ((1 - whiteMgPercentage) * egScoreBlack));
         score += (int) ((blackMgPercentage * mgScoreWhite) + ((1 - blackMgPercentage) * egScoreWhite));
 
