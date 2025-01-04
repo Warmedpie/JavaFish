@@ -413,7 +413,7 @@ public class Evaluation {
 
                 //Pawn shield
                 if (kingSquare == -1)
-                    mgScoreBlack -= 37;
+                    mgScoreBlack += 37;
 
                 //Space
                 if (board.getPiece(Square.squareAt(i - 8)) != Piece.BLACK_PAWN) {

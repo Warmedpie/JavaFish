@@ -3,6 +3,7 @@ package org.example.UCI;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.move.Move;
+import org.example.Engine.Evaluation;
 import org.example.Engine.Search;
 
 import java.io.PrintWriter;
@@ -112,7 +113,11 @@ public class CommandHandler {
 
                 continue;
             }
+            if (argument.equalsIgnoreCase("STATIC")) {
+                Evaluation e = new Evaluation();
+                System.out.println(e.evaluate(board));
 
+            }
             if (argument.equalsIgnoreCase("GO")) {
 
                 int depth = 32;
