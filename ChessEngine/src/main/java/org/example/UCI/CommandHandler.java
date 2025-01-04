@@ -113,11 +113,6 @@ public class CommandHandler {
 
                 continue;
             }
-            if (argument.equalsIgnoreCase("STATIC")) {
-                Evaluation e = new Evaluation();
-                System.out.println(e.evaluate(board));
-
-            }
             if (argument.equalsIgnoreCase("GO")) {
 
                 int depth = 32;
