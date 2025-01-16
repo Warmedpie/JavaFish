@@ -2,11 +2,7 @@ package org.example.Engine;
 
 import com.github.bhlangonijr.chesslib.*;
 import com.github.bhlangonijr.chesslib.move.Move;
-import com.github.bhlangonijr.chesslib.move.MoveGenerator;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 public class Evaluation {
 
@@ -175,7 +171,7 @@ public class Evaluation {
                         -17, -20, -12, -27, -30, -25, -14, -36,
                         -9,  24,   2, -16, -20,   6,  22, -22,
                         29,  -1, -20,  -7,  -8,  -4, -38, -29,
-                        -65,  23,  16, -15, -56, -34,   2,  13, 0
+                        -65,  23,  16, -15, -56, -34,   2,  13
                 };
 
         mgKingTableBlack = new int[]
@@ -191,14 +187,14 @@ public class Evaluation {
 
         egKingTableWhite = new int[]
                 {
-                        -53, -34, -21, -11, -28, -14, -24, -43
+                        -53, -34, -21, -11, -28, -14, -24, -43,
                         -27, -11,   4,  13,  14,   4,  -5, -17,
                         -19,  -3,  11,  21,  23,  16,   7,  -9,
                         -18,  -4,  21,  24,  27,  23,   9, -11,
                         -8,  22,  24,  27,  26,  33,  26,   3,
                         10,  17,  23,  15,  20,  45,  44,  13,
                         -12,  17,  14,  17,  17,  38,  23,  11,
-                        -74, -35, -18, -18, -11,  15,   4, -17, 0
+                        -74, -35, -18, -18, -11,  15,   4, -17
                 };
 
         egKingTableBlack = new int[]
@@ -303,45 +299,53 @@ public class Evaluation {
         int mgScoreBlack = 0;
         int egScoreBlack = 0;
 
+        //Mobility
+        int mobilityWhiteMg = 0;
+        int mobilityBlackMg = 0;
+
+        int mobilityWhiteEg = 0;
+        int mobilityBlackEg = 0;
+
+        //Attack / Defense score
+        long pieces = board.getBitboard();
+        long piecesWhite = board.getBitboard(Side.WHITE);
+        long piecesBlack = board.getBitboard(Side.BLACK);
+        long kingRingWhite = Bitboard.getKingAttacks(board.getKingSquare(Side.WHITE), pieces);
+        long kingRingBlack = Bitboard.getKingAttacks(board.getKingSquare(Side.BLACK), pieces);
+
+        int pawnShieldWhite = 0;
+        int pawnShieldBlack = 0;
+
+        int weakSquaresWhite = 0;
+        int weakSquaresBlack = 0;
+
+        long whiteVison = 0;
+        long blackVison = 0;
+
+        long whitePawnVison = 0;
+        long blackPawnVison = 0;
+        long whiteKnightVison = 0;
+        long blackKnightVison = 0;
+        long whiteBishopVison = 0;
+        long blackBishopVison = 0;
+        long whiteRookVison = 0;
+        long blackRookVison = 0;
+        long whiteQueenVison = 0;
+        long blackQueenVison = 0;
+
+        int attackCountWhite = 0;
+        int attackWeightWhite = 0;
+        int attackSquaresWhite = 0;
+        int attackCountBlack = 0;
+        int attackWeightBlack = 0;
+        int attackSquaresBlack = 0;
+        int knightDefenderWhite = 0;
+        int knightDefenderBlack = 0;
+
         for (int i = 0; i < 64; i++) {
 
             Square sq = Square.squareAt(i);
             Piece p = board.getPiece(sq);
-
-            //Attackers and defenders
-            int kingSquare = isKingSquare(board, i);
-
-            if (kingSquare == 1) {
-
-                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
-                    mgScoreBlack += 81;
-                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.BISHOP) != 0)
-                    mgScoreBlack += 52;
-                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.QUEEN) != 0)
-                    mgScoreBlack += 30;
-                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.ROOK) != 0)
-                    mgScoreBlack += 44;
-
-                //Knight defender
-                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
-                    mgScoreWhite += 45;
-            }
-            if (kingSquare == -1) {
-
-                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.KNIGHT) != 0)
-                    mgScoreWhite += 81;
-                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.BISHOP) != 0)
-                    mgScoreWhite += 52;
-                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.QUEEN) != 0)
-                    mgScoreWhite += 30;
-                if (board.squareAttackedByPieceType(sq, Side.WHITE, PieceType.ROOK) != 0)
-                    mgScoreWhite += 44;
-
-                //Knight defender
-                if (board.squareAttackedByPieceType(sq, Side.BLACK, PieceType.KNIGHT) != 0)
-                    mgScoreBlack += 45;
-
-            }
 
             if (p == Piece.NONE)
                 continue;
@@ -351,8 +355,8 @@ public class Evaluation {
                 egScoreWhite += egPawn + egPawnTableWhite[i];
 
                 //Pawn shield
-                if (kingSquare == 1)
-                    mgScoreWhite += 37;
+                if ((kingRingWhite & sq.getBitboard()) == 0)
+                    pawnShieldWhite++;
 
                 //Space
                 if (board.getPiece(Square.squareAt(i + 8)) != Piece.WHITE_PAWN) {
@@ -361,6 +365,11 @@ public class Evaluation {
                         score += 2;
                     }
                 }
+
+                long attacks = Bitboard.getPawnAttacks(Side.WHITE, sq);
+
+                whitePawnVison |= attacks;
+                whiteVison |= attacks;
 
                 continue;
             }
@@ -372,6 +381,25 @@ public class Evaluation {
                 if (Square.squareAt(i).getRank() == Rank.RANK_1)
                     mgScoreWhite -= 25;
 
+                long attacks = Bitboard.getKnightAttacks(sq, ~piecesWhite);
+                long defense = Bitboard.getKnightAttacks(sq, 0);
+
+                whiteVison |= defense;
+
+                mobilityWhiteMg += (Long.bitCount(attacks) - 4) * 4;
+                mobilityWhiteEg += (Long.bitCount(attacks) - 4) * 4;
+
+                whiteKnightVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingBlack);
+                if (atkSquares != 0) {
+                    attackCountWhite++;
+                    attackWeightWhite += 81;
+                    attackSquaresWhite += atkSquares;
+                }
+
+                knightDefenderWhite +=  Long.bitCount(defense);
+
                 continue;
             }
 
@@ -382,6 +410,20 @@ public class Evaluation {
                 if (Square.squareAt(i).getRank() == Rank.RANK_1)
                     mgScoreWhite -= 25;
 
+                long attacks = Bitboard.getBishopAttacks(pieces, sq);
+                mobilityWhiteMg += (Long.bitCount(attacks) - 7) * 3;
+                mobilityWhiteEg += (Long.bitCount(attacks) - 7) * 3;
+
+                whiteBishopVison |= attacks;
+                whiteVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingBlack);
+                if (atkSquares != 0) {
+                    attackCountWhite++;
+                    attackWeightWhite += 52;
+                    attackSquaresWhite += atkSquares;
+                }
+
                 continue;
             }
 
@@ -390,12 +432,40 @@ public class Evaluation {
                 mgScoreWhite += mgRook + rookTableWhite[i] + rookAdj[whitePawns];
                 egScoreWhite += egRook + rookTableWhite[i] + rookAdj[whitePawns];
 
+                long attacks = Bitboard.getRookAttacks(pieces, sq);
+                mobilityWhiteMg += (Long.bitCount(attacks) - 7) * 2;
+                mobilityWhiteEg += (Long.bitCount(attacks) - 7) * 4;
+
+                whiteRookVison |= attacks;
+                whiteVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingBlack);
+                if (atkSquares != 0) {
+                    attackCountWhite++;
+                    attackWeightWhite += 44;
+                    attackSquaresWhite += atkSquares;
+                }
+
                 continue;
             }
 
             if (p==Piece.WHITE_QUEEN) {
                 mgScoreWhite += mgQueen + queenTable[i];
                 egScoreWhite += egQueen + queenTable[i];
+
+                long attacks = Bitboard.getQueenAttacks(pieces, sq);
+                mobilityWhiteMg += (Long.bitCount(attacks) - 14);
+                mobilityWhiteEg += (Long.bitCount(attacks) - 14);
+
+                whiteQueenVison |= attacks;
+                whiteVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingBlack);
+                if (atkSquares != 0) {
+                    attackCountWhite++;
+                    attackWeightWhite += 30;
+                    attackSquaresWhite += atkSquares;
+                }
 
                 continue;
             }
@@ -412,8 +482,8 @@ public class Evaluation {
                 egScoreBlack += egPawn + egPawnTableBlack[i];
 
                 //Pawn shield
-                if (kingSquare == -1)
-                    mgScoreBlack -= 37;
+                if ((kingRingBlack & sq.getBitboard()) == 0)
+                    pawnShieldBlack++;
 
                 //Space
                 if (board.getPiece(Square.squareAt(i - 8)) != Piece.BLACK_PAWN) {
@@ -422,6 +492,11 @@ public class Evaluation {
                         score -= 2;
                     }
                 }
+
+                long attacks = Bitboard.getPawnAttacks(Side.BLACK, sq);
+                blackPawnVison |= attacks;
+                blackVison |= attacks;
+
 
                 continue;
             }
@@ -432,6 +507,25 @@ public class Evaluation {
 
                 if (Square.squareAt(i).getRank() == Rank.RANK_8)
                     mgScoreBlack -= 25;
+
+                long attacks = Bitboard.getKnightAttacks(sq, ~piecesBlack);
+                long defense = Bitboard.getKnightAttacks(sq, 0);
+
+                blackVison |= defense;
+
+                mobilityBlackMg += (Long.bitCount(attacks) - 4) * 4;
+                mobilityBlackEg += (Long.bitCount(attacks) - 4) * 4;
+
+                blackKnightVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingWhite);
+                if (atkSquares != 0) {
+                    attackCountBlack++;
+                    attackWeightBlack += 81;
+                    attackSquaresBlack += atkSquares;
+                }
+
+                knightDefenderBlack +=  Long.bitCount(defense);
 
                 continue;
             }
@@ -444,6 +538,20 @@ public class Evaluation {
                 if (Square.squareAt(i).getRank() == Rank.RANK_8)
                     mgScoreBlack -= 25;
 
+                long attacks = Bitboard.getBishopAttacks(pieces, sq);
+                mobilityBlackMg += (Long.bitCount(attacks) - 7) * 3;
+                mobilityBlackEg += (Long.bitCount(attacks) - 7) * 3;
+
+                blackBishopVison |= attacks;
+                blackVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingWhite);
+                if (atkSquares != 0) {
+                    attackCountBlack++;
+                    attackWeightBlack += 52;
+                    attackSquaresBlack += atkSquares;
+                }
+
                 continue;
             }
 
@@ -452,12 +560,40 @@ public class Evaluation {
                 mgScoreBlack += mgRook + rookTableBlack[i] + rookAdj[blackPawns];
                 egScoreBlack += egRook + rookTableBlack[i] + rookAdj[blackPawns];
 
+                long attacks = Bitboard.getRookAttacks(pieces, sq);
+                mobilityBlackMg += (Long.bitCount(attacks) - 7) * 2;
+                mobilityBlackEg += (Long.bitCount(attacks) - 7) * 4;
+
+                blackRookVison |= attacks;
+                blackVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingWhite);
+                if (atkSquares != 0) {
+                    attackCountBlack++;
+                    attackWeightBlack += 44;
+                    attackSquaresBlack += atkSquares;
+                }
+
                 continue;
             }
 
             if (p==Piece.BLACK_QUEEN) {
                 mgScoreBlack += mgQueen + queenTable[i];
                 egScoreBlack += egQueen + queenTable[i];
+
+                long attacks = Bitboard.getQueenAttacks(pieces, sq);
+                mobilityBlackMg += (Long.bitCount(attacks) - 14);
+                mobilityBlackEg += (Long.bitCount(attacks) - 14);
+
+                blackQueenVison |= attacks;
+                blackVison |= attacks;
+
+                int atkSquares = Long.bitCount(attacks & kingRingWhite);
+                if (atkSquares != 0) {
+                    attackCountBlack++;
+                    attackWeightBlack += 30;
+                    attackSquaresBlack += atkSquares;
+                }
 
                 continue;
             }
@@ -470,6 +606,36 @@ public class Evaluation {
             }
 
         }
+
+        //Mobility adjustment
+        mgScoreWhite += mobilityWhiteMg;
+        mgScoreBlack += mobilityBlackMg;
+
+        egScoreWhite += mobilityWhiteEg;
+        egScoreBlack += mobilityBlackEg;
+
+        //Attack/ defense adjustment
+        weakSquaresWhite = Long.bitCount((blackVison & kingRingWhite) & ~whiteVison);
+        weakSquaresBlack = Long.bitCount((whiteVison & kingRingBlack) & ~blackVison);
+
+        int attackScoreWhite = attackCountWhite > 1 ?
+            (attackWeightWhite * attackCountWhite) +
+                    (69 * attackSquaresWhite) +
+                    (90 * weakSquaresBlack) -
+                    (50 * pawnShieldBlack) -
+                    (45 * knightDefenderBlack)
+                : 0;
+
+        int attackScoreBlack = attackCountBlack > 1 ?
+                (attackWeightBlack * attackCountBlack) +
+                (69 * attackSquaresBlack) +
+                (90 * weakSquaresWhite) -
+                (50 * pawnShieldWhite)  -
+                (45 * knightDefenderWhite)
+                :0;
+
+        mgScoreWhite += attackScoreWhite;
+        mgScoreBlack += attackScoreBlack;
 
         //Piece value and piece square
         score -= (int) ((whiteMgPercentage * mgScoreBlack) + ((1 - whiteMgPercentage) * egScoreBlack));
@@ -495,8 +661,6 @@ public class Evaluation {
 
         if (Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) == 2)
             score += (int)(12 * phase);
-
-        score += mobilityScore(board);
 
         if (whiteMgPercentage == 0f && Long.bitCount(board.getBitboard(Piece.WHITE_QUEEN)) + Long.bitCount(board.getBitboard(Piece.WHITE_ROOK)) == 0 && Long.bitCount(board.getBitboard(Piece.BLACK_QUEEN)) + Long.bitCount(board.getBitboard(Piece.BLACK_ROOK)) > 0) {
 
@@ -543,38 +707,6 @@ public class Evaluation {
 
     }
 
-    int isKingSquare(Board b, int sq) {
-        if (sq <= 32) {
-            //King square white distance
-            int ksWD = Math.abs(63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.WHITE_KING)) - sq);
-
-            if (ksWD == 1 || ksWD == 8 || ksWD == 7 || ksWD == 9)
-                return 1;
-
-            //King square black distance
-            int ksBD = Math.abs(63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.BLACK_KING)) - sq);
-
-            if (ksBD == 1 || ksBD == 8 || ksBD == 7 || ksBD == 9)
-                return -1;
-
-            return 0;
-        }
-        //King square black distance
-        int ksBD = Math.abs(63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.BLACK_KING)) - sq);
-
-        if (ksBD == 1 || ksBD == 8 || ksBD == 7 || ksBD == 9)
-            return -1;
-
-        //King square white distance
-        int ksWD = Math.abs(63 - Long.numberOfLeadingZeros(b.getBitboard(Piece.WHITE_KING)) - sq);
-
-        if (ksWD == 1 || ksWD == 8 || ksWD == 7 || ksWD == 9)
-            return 1;
-
-        return 0;
-
-    }
-
     int winnable(Board b) {
         if (b.getBitboard(Piece.WHITE_PAWN) != 0 || b.getBitboard(Piece.BLACK_PAWN) != 0)
             return 1;
@@ -582,7 +714,7 @@ public class Evaluation {
         if (b.getBitboard(Piece.WHITE_QUEEN) != 0 || b.getBitboard(Piece.BLACK_QUEEN) != 0)
             return 1;
 
-        if (b.getBitboard(Piece.WHITE_ROOK) != 0 || b.getBitboard(Piece.WHITE_ROOK) != 0)
+        if (b.getBitboard(Piece.WHITE_ROOK) != 0 || b.getBitboard(Piece.BLACK_ROOK) != 0)
             return 1;
 
         long bbN = b.getBitboard(Piece.WHITE_KNIGHT);
@@ -604,24 +736,6 @@ public class Evaluation {
 
     }
 
-    int mobilityScore(Board b) {
-        long quietBB = ~b.getBitboard(b.getSideToMove()) & ~b.getBitboard(b.getSideToMove().flip());
-
-        int knightMobilityWhite = getKnightMobility(Side.WHITE, b, quietBB);
-        int knightMobilityBlack = getKnightMobility(Side.BLACK, b, quietBB);
-
-        int bishopMobilityWhite = getBishopMobility(Side.WHITE, b, quietBB);
-        int bishopMobilityBlack = getBishopMobility(Side.BLACK, b, quietBB);
-
-        int rookMobilityWhite = getRookMobility(Side.WHITE, b, quietBB);
-        int rookMobilityBlack = getRookMobility(Side.BLACK, b, quietBB);
-
-        int queenMobilityWhite = getQueenMobility(Side.WHITE, b, quietBB);
-        int queenMobilityBlack = getQueenMobility(Side.BLACK, b, quietBB);
-
-        return (4 * (knightMobilityWhite - 4)) + (3 * (bishopMobilityWhite - 7)) + (2 * (rookMobilityWhite - 7)) + (queenMobilityWhite - 14) - (4 * (knightMobilityBlack - 4)) - (3 * (bishopMobilityBlack - 7)) - (2 * (rookMobilityBlack - 7)) - (queenMobilityBlack - 14);
-    }
-
     public float whitePhase(Board b) {
         float whiteMat = (Long.bitCount(b.getBitboard(Piece.WHITE_QUEEN)) * 9) +
                 (Long.bitCount(b.getBitboard(Piece.WHITE_ROOK)) * 5) +
@@ -640,82 +754,6 @@ public class Evaluation {
 
         return  Math.max(0,((blackMat - 10) / 21));
 
-    }
-
-    int getKnightMobility(Side side, Board board, long mask) {
-        long pieces = board.getBitboard(Piece.make(side, PieceType.KNIGHT));
-        int m = 0;
-
-        while(pieces != 0L) {
-            int knightIndex = Bitboard.bitScanForward(pieces);
-            pieces = Bitboard.extractLsb(pieces);
-            Square sqSource = Square.squareAt(knightIndex);
-            long attacks = Bitboard.getKnightAttacks(sqSource, mask);
-
-            while(attacks != 0L) {
-                attacks = Bitboard.extractLsb(attacks);
-                m++;
-            }
-        }
-
-        return m;
-    }
-
-    int getBishopMobility(Side side, Board board, long mask) {
-        long pieces = board.getBitboard(Piece.make(side, PieceType.BISHOP));
-        int m = 0;
-
-        while(pieces != 0L) {
-            int sourceIndex = Bitboard.bitScanForward(pieces);
-            pieces = Bitboard.extractLsb(pieces);
-            Square sqSource = Square.squareAt(sourceIndex);
-            long attacks = Bitboard.getBishopAttacks(board.getBitboard(), sqSource) & mask;
-
-            while(attacks != 0L) {
-                attacks = Bitboard.extractLsb(attacks);
-                m++;
-            }
-        }
-
-        return m;
-    }
-
-    int getRookMobility(Side side, Board board, long mask) {
-        long pieces = board.getBitboard(Piece.make(side, PieceType.ROOK));
-        int m = 0;
-
-        while(pieces != 0L) {
-            int sourceIndex = Bitboard.bitScanForward(pieces);
-            pieces = Bitboard.extractLsb(pieces);
-            Square sqSource = Square.squareAt(sourceIndex);
-            long attacks = Bitboard.getRookAttacks(board.getBitboard(), sqSource) & mask;
-
-            while (attacks != 0L) {
-                attacks = Bitboard.extractLsb(attacks);
-                m++;
-            }
-        }
-
-        return m;
-    }
-
-    int getQueenMobility(Side side, Board board, long mask) {
-        long pieces = board.getBitboard(Piece.make(side, PieceType.QUEEN));
-        int m = 0;
-
-        while(pieces != 0L) {
-            int sourceIndex = Bitboard.bitScanForward(pieces);
-            pieces = Bitboard.extractLsb(pieces);
-            Square sqSource = Square.squareAt(sourceIndex);
-            long attacks = Bitboard.getQueenAttacks(board.getBitboard(), sqSource) & mask;
-
-            while(attacks != 0L) {
-                attacks = Bitboard.extractLsb(attacks);
-                m++;
-            }
-        }
-
-        return m;
     }
 
 }

@@ -3,6 +3,7 @@ package org.example.UCI;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.move.Move;
+import org.example.Engine.Evaluation;
 import org.example.Engine.Search;
 
 import java.io.PrintWriter;
@@ -18,6 +19,8 @@ public class CommandHandler {
 
     int multiPv = 1;
 
+    Evaluation eval = new Evaluation();
+
     public void parse(String command) {
         String[] arguments = command.split("\\s+");
 
@@ -32,6 +35,10 @@ public class CommandHandler {
                 System.out.println("uciok");
 
                 continue;
+            }
+
+            if (argument.equalsIgnoreCase("STATIC")) {
+                System.out.println(eval.evaluate(board));
             }
 
             if (argument.equalsIgnoreCase("DEBUG")) {

@@ -3,6 +3,7 @@ package org.example.UCI;
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.move.Move;
 import org.example.Engine.Book;
+import org.example.Engine.Evaluation;
 import org.example.Engine.Search;
 
 import java.util.ArrayList;
