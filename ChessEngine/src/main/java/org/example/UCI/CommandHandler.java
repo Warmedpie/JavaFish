@@ -157,8 +157,6 @@ public class CommandHandler {
                         i++;
                         smartTime += Integer.parseInt(arguments[i++]);
                     } else {
-                        moveTime = 5000;
-                        depth = 32;
                         i++;
                     }
 
